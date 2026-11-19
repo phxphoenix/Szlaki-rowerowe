@@ -146,6 +146,16 @@ describe("Map utils & TrailGoogleMap (UI-03)", () => {
     expect(gmapsLink).toHaveAttribute("target", "_blank");
   });
 
+  it("renders SVG vector fallback when API key does not have valid AIza prefix", () => {
+    render(
+      <TrailGoogleMap
+        trail={SLASKIE_TRAIL}
+        apiKey="AQ.NonGoogleMapsTokenValue1234567890"
+      />,
+    );
+    expect(screen.getByTestId("map-fallback")).toBeInTheDocument();
+  });
+
   it("handles a trail without routePoints gracefully in fallback mode", () => {
     const emptyRouteTrail: Trail = {
       ...SLASKIE_TRAIL,
