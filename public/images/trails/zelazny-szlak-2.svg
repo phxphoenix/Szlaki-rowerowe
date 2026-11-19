@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" role="img" aria-label="ŻELAZNY SZLAK">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#11161A" />
+      <stop offset="100%" stop-color="#1E2D24" />
+    </linearGradient>
+    <linearGradient id="ridge1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#16A34A" stop-opacity="0.32" />
+      <stop offset="100%" stop-color="#11161A" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF4D1C" />
+      <stop offset="100%" stop-color="#FF8A4C" />
+    </linearGradient>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="1" />
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="750" fill="url(#bg)" />
+  <rect width="1200" height="750" fill="url(#grid)" />
+
+  <!-- Topographic contour isolines -->
+  <g fill="none" stroke="#FFFFFF" stroke-opacity="0.09" stroke-width="1.5">
+    <path d="M -50 425 Q 250 305 540 375 T 1250 275" />
+    <path d="M -50 465 Q 270 345 560 410 T 1250 320" />
+    <path d="M -50 505 Q 290 385 580 445 T 1250 365" />
+    <path d="M -50 545 Q 310 425 600 480 T 1250 410" />
+    <path d="M -50 255 Q 380 155 720 235 T 1250 145" />
+    <path d="M -50 295 Q 390 200 740 275 T 1250 190" />
+  </g>
+
+  <!-- Stylized Alpine / Terrain Silhouettes -->
+  <path d="M 0 750 L 0 485 L 180 375 L 360 445 L 570 295 L 780 395 L 980 255 L 1200 355 L 1200 750 Z" fill="url(#ridge1)" />
+  <path d="M 0 750 L 0 600 L 220 530 L 440 575 L 680 470 L 920 535 L 1200 450 L 1200 750 Z" fill="#11161A" fill-opacity="0.55" />
+
+  <!-- Accent glow orb -->
+  <circle cx="925" cy="215" r="160" fill="#16A34A" fill-opacity="0.14" />
+
+  <!-- Route Polyline with contrast halo -->
+  <path d="M 140 590 C 310 530, 460 280, 660 310 C 830 335, 950 260, 1070 140" fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="10" stroke-linecap="round" />
+  <path d="M 140 590 C 310 530, 460 280, 660 310 C 830 335, 950 260, 1070 140" fill="none" stroke="url(#glow)" stroke-width="5" stroke-linecap="round" />
+
+  <!-- Start / End Telemetry Waypoints -->
+  <circle cx="140" cy="590" r="11" fill="#16A34A" stroke="#FFFFFF" stroke-width="3" />
+  <circle cx="1070" cy="140" r="11" fill="#FF4D1C" stroke="#FFFFFF" stroke-width="3" />
+
+  <!-- Minimal Corner Telemetry Framing -->
+  <g stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2" fill="none">
+    <path d="M 48 84 L 48 48 L 84 48" />
+    <path d="M 1116 48 L 1152 48 L 1152 84" />
+    <path d="M 48 666 L 48 702 L 84 702" />
+    <path d="M 1116 702 L 1152 702 L 1152 666" />
+  </g>
+
+  <text x="64" y="654" fill="#F8FAF7" fill-opacity="0.92" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="800" letter-spacing="3">ŻELAZNY SZLAK</text>
+  <text x="64" y="688" fill="#96A4B2" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="600" letter-spacing="2">POGRANICZE ŚLĄSKIE • PROFIL TERENU</text>
+</svg>

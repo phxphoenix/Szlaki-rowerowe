@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Szlaki Rowerowe — Velo Pulse" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Trasa rowerowa z dzieckiem: Pogoria i Park Zielona</name>
+    <desc>Rodzinna pętla wokół jezior Pogoria III i Pogoria IV w Dąbrowie Górniczej (źródło: slaskie.travel/route/1019753)</desc>
+  </metadata>
+  <trk>
+    <name>Trasa rowerowa z dzieckiem: Pogoria i Park Zielona</name>
+    <trkseg>
+      <trkpt lat="50.3514" lon="19.1995">
+        <ele>263</ele>
+      </trkpt>
+      <trkpt lat="50.353075" lon="19.202527">
+        <ele>268</ele>
+      </trkpt>
+      <trkpt lat="50.354974" lon="19.205287">
+        <ele>272</ele>
+      </trkpt>
+      <trkpt lat="50.356776" lon="19.207628">
+        <ele>273</ele>
+      </trkpt>
+      <trkpt lat="50.358157" lon="19.20959">
+        <ele>271</ele>
+      </trkpt>
+      <trkpt lat="50.356097" lon="19.208934">
+        <ele>268</ele>
+      </trkpt>
+      <trkpt lat="50.352579" lon="19.207552">
+        <ele>263</ele>
+      </trkpt>
+      <trkpt lat="50.349129" lon="19.206711">
+        <ele>260</ele>
+      </trkpt>
+      <trkpt lat="50.346259" lon="19.206613">
+        <ele>258</ele>
+      </trkpt>
+      <trkpt lat="50.344822" lon="19.205257">
+        <ele>258</ele>
+      </trkpt>
+      <trkpt lat="50.34488" lon="19.201962">
+        <ele>258</ele>
+      </trkpt>
+      <trkpt lat="50.345354" lon="19.198611">
+        <ele>259</ele>
+      </trkpt>
+      <trkpt lat="50.345533" lon="19.194678">
+        <ele>260</ele>
+      </trkpt>
+      <trkpt lat="50.345191" lon="19.190007">
+        <ele>260</ele>
+      </trkpt>
+      <trkpt lat="50.345579" lon="19.185341">
+        <ele>261</ele>
+      </trkpt>
+      <trkpt lat="50.344825" lon="19.179709">
+        <ele>262</ele>
+      </trkpt>
+      <trkpt lat="50.343599" lon="19.173593">
+        <ele>263</ele>
+      </trkpt>
+      <trkpt lat="50.342818" lon="19.167654">
+        <ele>264</ele>
+      </trkpt>
+      <trkpt lat="50.345517" lon="19.168078">
+        <ele>265</ele>
+      </trkpt>
+      <trkpt lat="50.350033" lon="19.170341">
+        <ele>266</ele>
+      </trkpt>
+      <trkpt lat="50.355871" lon="19.174001">
+        <ele>267</ele>
+      </trkpt>
+      <trkpt lat="50.362226" lon="19.178782">
+        <ele>267</ele>
+      </trkpt>
+      <trkpt lat="50.369107" lon="19.183718">
+        <ele>269</ele>
+      </trkpt>
+      <trkpt lat="50.375214" lon="19.188215">
+        <ele>272</ele>
+      </trkpt>
+      <trkpt lat="50.37962" lon="19.191785">
+        <ele>275</ele>
+      </trkpt>
+      <trkpt lat="50.38265" lon="19.193979">
+        <ele>280</ele>
+      </trkpt>
+      <trkpt lat="50.384775" lon="19.195191">
+        <ele>283</ele>
+      </trkpt>
+      <trkpt lat="50.386752" lon="19.196095">
+        <ele>285</ele>
+      </trkpt>
+      <trkpt lat="50.390072" lon="19.196491">
+        <ele>285</ele>
+      </trkpt>
+      <trkpt lat="50.395021" lon="19.197121">
+        <ele>282</ele>
+      </trkpt>
+      <trkpt lat="50.400626" lon="19.198887">
+        <ele>279</ele>
+      </trkpt>
+      <trkpt lat="50.40042" lon="19.204472">
+        <ele>274</ele>
+      </trkpt>
+      <trkpt lat="50.399731" lon="19.211342">
+        <ele>271</ele>
+      </trkpt>
+      <trkpt lat="50.397854" lon="19.219168">
+        <ele>270</ele>
+      </trkpt>
+      <trkpt lat="50.394592" lon="19.227386">
+        <ele>272</ele>
+      </trkpt>
+      <trkpt lat="50.3887" lon="19.228571">
+        <ele>274</ele>
+      </trkpt>
+      <trkpt lat="50.382122" lon="19.22751">
+        <ele>276</ele>
+      </trkpt>
+      <trkpt lat="50.375972" lon="19.225463">
+        <ele>277</ele>
+      </trkpt>
+      <trkpt lat="50.370752" lon="19.222488">
+        <ele>276</ele>
+      </trkpt>
+      <trkpt lat="50.367529" lon="19.219919">
+        <ele>273</ele>
+      </trkpt>
+      <trkpt lat="50.365802" lon="19.218036">
+        <ele>270</ele>
+      </trkpt>
+      <trkpt lat="50.364195" lon="19.216418">
+        <ele>267</ele>
+      </trkpt>
+      <trkpt lat="50.362209" lon="19.215345">
+        <ele>265</ele>
+      </trkpt>
+      <trkpt lat="50.359876" lon="19.213912">
+        <ele>264</ele>
+      </trkpt>
+      <trkpt lat="50.357736" lon="19.210365">
+        <ele>263</ele>
+      </trkpt>
+      <trkpt lat="50.355398" lon="19.206963">
+        <ele>263</ele>
+      </trkpt>
+      <trkpt lat="50.353221" lon="19.203405">
+        <ele>263</ele>
+      </trkpt>
+      <trkpt lat="50.3514" lon="19.1995">
+        <ele>263</ele>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

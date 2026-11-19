@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Szlaki Rowerowe — Velo Pulse" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Velo Dunajec — Przełom Dunajca (Czorsztyn – Szczawnica – Stary Sącz)</name>
+    <desc>Malowniczy odcinek Velo Dunajec przez Pieniny wzdłuż Przełomu Dunajca</desc>
+  </metadata>
+  <trk>
+    <name>Velo Dunajec — Przełom Dunajca (Czorsztyn – Szczawnica – Stary Sącz)</name>
+    <trkseg>
+      <trkpt lat="49.4355" lon="20.2895">
+        <ele>534</ele>
+      </trkpt>
+      <trkpt lat="49.431653" lon="20.29666">
+        <ele>542</ele>
+      </trkpt>
+      <trkpt lat="49.428049" lon="20.303506">
+        <ele>545</ele>
+      </trkpt>
+      <trkpt lat="49.424305" lon="20.309871">
+        <ele>541</ele>
+      </trkpt>
+      <trkpt lat="49.420052" lon="20.31582">
+        <ele>531</ele>
+      </trkpt>
+      <trkpt lat="49.415178" lon="20.32165">
+        <ele>516</ele>
+      </trkpt>
+      <trkpt lat="49.409951" lon="20.327782">
+        <ele>501</ele>
+      </trkpt>
+      <trkpt lat="49.404929" lon="20.334602">
+        <ele>489</ele>
+      </trkpt>
+      <trkpt lat="49.402493" lon="20.344502">
+        <ele>481</ele>
+      </trkpt>
+      <trkpt lat="49.401863" lon="20.356041">
+        <ele>478</ele>
+      </trkpt>
+      <trkpt lat="49.402121" lon="20.367915">
+        <ele>478</ele>
+      </trkpt>
+      <trkpt lat="49.40259" lon="20.379509">
+        <ele>478</ele>
+      </trkpt>
+      <trkpt lat="49.402382" lon="20.390217">
+        <ele>477</ele>
+      </trkpt>
+      <trkpt lat="49.400798" lon="20.399643">
+        <ele>474</ele>
+      </trkpt>
+      <trkpt lat="49.397677" lon="20.407766">
+        <ele>469</ele>
+      </trkpt>
+      <trkpt lat="49.394688" lon="20.412217">
+        <ele>464</ele>
+      </trkpt>
+      <trkpt lat="49.393235" lon="20.412795">
+        <ele>462</ele>
+      </trkpt>
+      <trkpt lat="49.392896" lon="20.414028">
+        <ele>460</ele>
+      </trkpt>
+      <trkpt lat="49.394387" lon="20.41662">
+        <ele>458</ele>
+      </trkpt>
+      <trkpt lat="49.39769" lon="20.420908">
+        <ele>456</ele>
+      </trkpt>
+      <trkpt lat="49.402012" lon="20.426737">
+        <ele>454</ele>
+      </trkpt>
+      <trkpt lat="49.406088" lon="20.433486">
+        <ele>453</ele>
+      </trkpt>
+      <trkpt lat="49.408885" lon="20.440293">
+        <ele>453</ele>
+      </trkpt>
+      <trkpt lat="49.410659" lon="20.446501">
+        <ele>456</ele>
+      </trkpt>
+      <trkpt lat="49.410542" lon="20.451062">
+        <ele>460</ele>
+      </trkpt>
+      <trkpt lat="49.409534" lon="20.453748">
+        <ele>463</ele>
+      </trkpt>
+      <trkpt lat="49.409011" lon="20.45487">
+        <ele>463</ele>
+      </trkpt>
+      <trkpt lat="49.410158" lon="20.455196">
+        <ele>459</ele>
+      </trkpt>
+      <trkpt lat="49.413472" lon="20.455717">
+        <ele>450</ele>
+      </trkpt>
+      <trkpt lat="49.41856" lon="20.457359">
+        <ele>438</ele>
+      </trkpt>
+      <trkpt lat="49.42433" lon="20.453651">
+        <ele>427</ele>
+      </trkpt>
+      <trkpt lat="49.429422" lon="20.450562">
+        <ele>420</ele>
+      </trkpt>
+      <trkpt lat="49.432805" lon="20.44884">
+        <ele>420</ele>
+      </trkpt>
+      <trkpt lat="49.43418" lon="20.447683">
+        <ele>427</ele>
+      </trkpt>
+      <trkpt lat="49.434072" lon="20.446166">
+        <ele>438</ele>
+      </trkpt>
+      <trkpt lat="49.433572" lon="20.443517">
+        <ele>449</ele>
+      </trkpt>
+      <trkpt lat="49.433861" lon="20.439335">
+        <ele>455</ele>
+      </trkpt>
+      <trkpt lat="49.44009" lon="20.437764">
+        <ele>452</ele>
+      </trkpt>
+      <trkpt lat="49.451246" lon="20.438266">
+        <ele>440</ele>
+      </trkpt>
+      <trkpt lat="49.46346" lon="20.438504">
+        <ele>423</ele>
+      </trkpt>
+      <trkpt lat="49.475775" lon="20.439207">
+        <ele>405</ele>
+      </trkpt>
+      <trkpt lat="49.487304" lon="20.440886">
+        <ele>390</ele>
+      </trkpt>
+      <trkpt lat="49.497593" lon="20.443705">
+        <ele>381</ele>
+      </trkpt>
+      <trkpt lat="49.506765" lon="20.447462">
+        <ele>375</ele>
+      </trkpt>
+      <trkpt lat="49.514643" lon="20.457462">
+        <ele>372</ele>
+      </trkpt>
+      <trkpt lat="49.520815" lon="20.481814">
+        <ele>369</ele>
+      </trkpt>
+      <trkpt lat="49.527649" lon="20.505679">
+        <ele>363</ele>
+      </trkpt>
+      <trkpt lat="49.535247" lon="20.528872">
+        <ele>356</ele>
+      </trkpt>
+      <trkpt lat="49.543325" lon="20.551485">
+        <ele>347</ele>
+      </trkpt>
+      <trkpt lat="49.551421" lon="20.573817">
+        <ele>336</ele>
+      </trkpt>
+      <trkpt lat="49.559171" lon="20.596231">
+        <ele>326</ele>
+      </trkpt>
+      <trkpt lat="49.5665" lon="20.619">
+        <ele>315</ele>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
