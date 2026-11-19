@@ -1,7 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { count } from "drizzle-orm";
-import { getDb, isDatabaseConfigured } from "@/db";
-import { trails } from "@/db/schema";
+import { isDatabaseConfigured } from "@/db";
 import { seedDatabase } from "./seed";
 
 async function bootstrapDatabase(): Promise<void> {
@@ -19,20 +17,10 @@ async function bootstrapDatabase(): Promise<void> {
     env: process.env,
   });
 
-  const db = getDb();
-  const [row] = await db.select({ total: count() }).from(trails);
-  const existingCount = Number(row?.total ?? 0);
-
-  if (existingCount === 0) {
-    console.info(
-      "[bootstrap-db] Trails table is empty — running initial seed...",
-    );
-    await seedDatabase();
-  } else {
-    console.info(
-      `[bootstrap-db] Trails table already contains ${existingCount} record(s) — skipping initial seed.`,
-    );
-  }
+  console.info(
+    "[bootstrap-db] Upserting reference seed trails with authentic road/GPX geometries...",
+  );
+  await seedDatabase();
 }
 
 bootstrapDatabase().catch((error) => {

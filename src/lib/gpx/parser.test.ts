@@ -20,19 +20,19 @@ describe("GPX parser & Douglas-Peucker simplification", () => {
 
     const parsed = parseGpx(xml);
 
-    expect(parsed.name).toBe(
+    expect(parsed.name?.replace(/\s+/g, " ").trim()).toBe(
       "Trasa rowerowa z dzieckiem: Pogoria i Park Zielona",
     );
-    // Oczekiwana długość pętli Pogorii to ~19.79 km (±2%)
-    expect(parsed.distanceKm).toBeGreaterThan(19.3);
-    expect(parsed.distanceKm).toBeLessThan(20.3);
+    // Oficjalny ślad GPX z slaskie.travel/download/route/gpx/1019753 ma ~23.02 km i 97 m przewyższenia
+    expect(parsed.distanceKm).toBeGreaterThan(22.5);
+    expect(parsed.distanceKm).toBeLessThan(23.5);
     expect(parsed.hasElevation).toBe(true);
-    expect(parsed.elevationGainM).toBeGreaterThan(35);
-    expect(parsed.elevationGainM).toBeLessThan(55);
-    expect(parsed.startLat).toBeCloseTo(50.3514, 4);
-    expect(parsed.startLng).toBeCloseTo(19.1995, 4);
-    expect(parsed.endLat).toBeCloseTo(50.3514, 4);
-    expect(parsed.endLng).toBeCloseTo(19.1995, 4);
+    expect(parsed.elevationGainM).toBeGreaterThan(80);
+    expect(parsed.elevationGainM).toBeLessThan(115);
+    expect(parsed.startLat).toBeCloseTo(50.34398, 4);
+    expect(parsed.startLng).toBeCloseTo(19.19803, 4);
+    expect(parsed.endLat).toBeCloseTo(50.34398, 4);
+    expect(parsed.endLng).toBeCloseTo(19.19801, 4);
     expect(parsed.isLoop).toBe(true);
     expect(parsed.bounds.north).toBeGreaterThan(parsed.bounds.south);
     expect(parsed.bounds.east).toBeGreaterThan(parsed.bounds.west);

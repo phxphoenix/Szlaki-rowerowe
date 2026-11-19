@@ -54,10 +54,10 @@ describe("Trail repository (in-memory fallback mode)", () => {
     expect(offroad.total).toBe(1);
     expect(offroad.items[0]?.slug).toContain("orlich-gniazd");
 
-    const range = await listTrails({ minDistance: 40, maxDistance: 50 });
+    const range = await listTrails({ minDistance: 29, maxDistance: 40 });
     expect(
       range.items.every(
-        (item) => item.distanceKm >= 40 && item.distanceKm <= 50,
+        (item) => item.distanceKm >= 29 && item.distanceKm <= 40,
       ),
     ).toBe(true);
     expect(range.total).toBe(3);

@@ -645,6 +645,20 @@ export function extractTrailMetadataFromHtml(
       gpxSet.add(resolved);
     }
   }
+  if (isSlaskieTravel) {
+    const slaskieGpxMatch =
+      /\/download\/route\/gpx\/(\d+)/i.exec(html) ??
+      (gpxSet.size === 0 ? /\/route\/(\d+)/i.exec(sourceUrl) : null);
+    if (slaskieGpxMatch?.[1]) {
+      const resolved = resolveHttpUrl(
+        `/download/route/gpx/${slaskieGpxMatch[1]}`,
+        sourceUrl,
+      );
+      if (resolved) {
+        gpxSet.add(resolved);
+      }
+    }
+  }
   const gpxUrls = Array.from(gpxSet);
 
   // Zbieranie obrazów
