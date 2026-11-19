@@ -355,7 +355,25 @@ export function TrailGoogleMap({
     setHasLoadError(true);
   }, []);
 
-  if (!resolvedApiKey || hasLoadError) {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const win = window as Window & { gm_authFailure?: () => void };
+    const previousHandler = win.gm_authFailure;
+    win.gm_authFailure = () => {
+      setHasLoadError(true);
+      previousHandler?.();
+    };
+    return () => {
+      if (win.gm_authFailure) {
+        win.gm_authFailure = previousHandler;
+      }
+    };
+  }, []);
+
+  const isPlausibleGoogleMapsKey =
+    resolvedApiKey.length >= 20 && resolvedApiKey.startsWith("AIza");
+
+  if (!isPlausibleGoogleMapsKey || hasLoadError) {
     return (
       <MapFallback
         trail={trail}
