@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -25,6 +24,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { TrailGallery } from "@/components/gallery/TrailGallery";
+import { TrailHeroImage } from "@/components/gallery/TrailHeroImage";
 import { TrailMapSection } from "@/components/map/TrailMapSection";
 import { formatCoordinate } from "@/components/map/utils";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +45,6 @@ import {
   formatDuration,
   formatElevation,
 } from "@/lib/utils/format";
-import { shouldUseUnoptimizedImage } from "@/lib/utils/image";
 
 export const dynamic = "force-dynamic";
 
@@ -226,19 +225,11 @@ export default async function TrailDetailPage({ params }: PageProps) {
       {/* Sporty Hero Section */}
       <section className="relative overflow-hidden rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-carbon)] text-[var(--text-on-dark)] shadow-lg">
         <div className="relative min-h-[300px] sm:min-h-[360px] lg:min-h-[420px]">
-          <Image
-            src={trail.coverImageUrl}
-            alt={trail.title}
-            fill
-            priority
-            sizes="(max-width: 1280px) 100vw, 1280px"
-            unoptimized={shouldUseUnoptimizedImage(trail.coverImageUrl)}
-            className="object-cover"
-          />
+          <TrailHeroImage src={trail.coverImageUrl} alt={trail.title} />
 
           <div
             aria-hidden="true"
-            className="absolute inset-0 bg-gradient-to-t from-[#0D1114] via-[#11161A]/70 to-[#11161A]/35"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0D1114] via-[#11161A]/70 to-[#11161A]/35"
           />
 
           <div className="relative flex min-h-[300px] flex-col justify-between p-5 sm:min-h-[360px] sm:p-8 lg:min-h-[420px] lg:p-10">

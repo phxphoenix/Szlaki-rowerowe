@@ -108,8 +108,12 @@ test.describe("Responsive Layout & PWA Audit (E2E-06, E2E-07)", () => {
       );
 
       await assertMinTouchHeight(
-        actionsBar.getByRole("link", { name: /Otwórz w Google Maps/i }),
+        actionsBar.getByRole("link", { name: /Otwórz trasę w Google Maps/i }),
         "Sticky Google Maps CTA",
+      );
+      await assertMinTouchHeight(
+        actionsBar.getByRole("link", { name: /Dojazd do startu/i }),
+        "Sticky Dojazd do startu",
       );
       await assertMinTouchHeight(
         actionsBar.getByRole("link", { name: /Pobierz GPX/i }),
@@ -120,6 +124,10 @@ test.describe("Responsive Layout & PWA Audit (E2E-06, E2E-07)", () => {
         "Sticky Udostępnij",
       );
       await assertMinTouchHeight(
+        page.getByRole("button", { name: /Moja pozycja/i }),
+        "Map Moja pozycja GPS button",
+      );
+      await assertMinTouchHeight(
         page.getByRole("button", { name: /Wyśrodkuj trasę/i }),
         "Map recenter button",
       );
@@ -127,10 +135,16 @@ test.describe("Responsive Layout & PWA Audit (E2E-06, E2E-07)", () => {
         page.getByRole("button", { name: /Pełny ekran mapy/i }),
         "Map fullscreen button",
       );
-      await assertMinTouchHeight(
-        page.getByRole("button", { name: /^Teren$/i }),
-        "Map type Teren button",
-      );
+      if ((await page.getByTestId("trail-google-map").count()) > 0) {
+        await assertMinTouchHeight(
+          page.getByRole("button", { name: /^Teren$/i }),
+          "Map type Teren button",
+        );
+      } else {
+        await expect(
+          page.getByRole("button", { name: /^Teren$/i }),
+        ).toHaveCount(0);
+      }
       await assertMinTouchHeight(
         page.getByRole("link", { name: /Źródło: SLASKIE\.travel/i }),
         "Hero source link",

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { Camera, Expand } from "lucide-react";
+import { Camera, CameraOff, Expand } from "lucide-react";
 import { shouldUseUnoptimizedImage } from "@/lib/utils/image";
 import type { TrailImage } from "@/types/trail";
 import { PhotoLightbox } from "@/components/gallery/PhotoLightbox";
@@ -20,6 +20,7 @@ export function TrailGallery({
 }: TrailGalleryProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
 
   const galleryImages = useMemo<TrailImage[]>(() => {
     if (images.length > 0) {
@@ -85,19 +86,38 @@ export function TrailGallery({
               className="group relative flex min-h-[44px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)]"
             >
               <div className="relative aspect-[16/10] w-full overflow-hidden bg-[var(--bg-carbon)]">
-                <Image
-                  src={img.url}
-                  alt={altText}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  unoptimized={shouldUseUnoptimizedImage(img.url)}
-                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                />
+                {failedUrls[img.url] ? (
+                  <div
+                    data-testid="gallery-image-fallback"
+                    className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[var(--bg-surface-muted)] px-4 text-center text-xs text-[var(--text-secondary)]"
+                  >
+                    <CameraOff className="h-7 w-7 opacity-65" aria-hidden="true" />
+                    <span className="font-medium">
+                      Nie udało się załadować zdjęcia
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <Image
+                      src={img.url}
+                      alt={altText}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      unoptimized={shouldUseUnoptimizedImage(img.url)}
+                      onError={() =>
+                        setFailedUrls((prev) =>
+                          prev[img.url] ? prev : { ...prev, [img.url]: true },
+                        )
+                      }
+                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                    />
 
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#11161A]/65 via-transparent to-transparent opacity-80 transition-opacity group-hover:opacity-95"
-                />
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#11161A]/65 via-transparent to-transparent opacity-80 transition-opacity group-hover:opacity-95"
+                    />
+                  </>
+                )}
 
                 <span className="absolute top-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#11161A]/75 text-white backdrop-blur-sm transition-transform group-hover:scale-110">
                   <Expand className="h-4 w-4" aria-hidden="true" />

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
+  checkLoginRateLimit,
+  clearLoginRateLimitForIp,
+  extractClientIp,
+  recordFailedLoginAttempt,
+} from "@/lib/auth/rate-limit";
+import {
   createSessionToken,
   isAuthConfigured,
   setSessionCookie,
@@ -21,6 +27,22 @@ export async function POST(request: NextRequest) {
           "Autoryzacja nie jest skonfigurowana na serwerze (brak zmiennej ADMIN_PASSWORD).",
       },
       { status: 503 },
+    );
+  }
+
+  const clientIp = extractClientIp(request);
+  const rateLimit = checkLoginRateLimit(clientIp);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: `Zbyt wiele nieudanych prób logowania. Spróbuj ponownie za ${rateLimit.retryAfterSeconds} s.`,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      },
     );
   }
 
@@ -45,12 +67,14 @@ export async function POST(request: NextRequest) {
   }
 
   if (!verifyAdminPassword(parsed.data.password)) {
+    recordFailedLoginAttempt(clientIp);
     return NextResponse.json(
       { error: "Nieprawidłowe hasło administratora." },
       { status: 401 },
     );
   }
 
+  clearLoginRateLimitForIp(clientIp);
   const token = await createSessionToken();
   const response = NextResponse.json({ authenticated: true }, { status: 200 });
   return setSessionCookie(response, token, request);

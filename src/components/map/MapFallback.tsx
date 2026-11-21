@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils/cn";
 import { formatDistance } from "@/lib/utils/format";
 import type { Trail, TrailPoi } from "@/types/trail";
 import {
-  buildGoogleMapsDirectionsUrl,
+  buildGoogleMapsRouteUrl,
+  buildGoogleMapsStartNavigationUrl,
   formatCoordinate,
   getRouteBoundsAndCenter,
   getTrailOutlineColor,
@@ -44,7 +45,14 @@ export function MapFallback({
 }: MapFallbackProps) {
   const [selectedPoi, setSelectedPoi] = useState<TrailPoi | null>(null);
 
-  const directionsUrl = useMemo(() => buildGoogleMapsDirectionsUrl(trail), [trail]);
+  const routeUrl = useMemo(
+    () => buildGoogleMapsRouteUrl(trail, { forceDirections: true }),
+    [trail],
+  );
+  const startNavUrl = useMemo(
+    () => buildGoogleMapsStartNavigationUrl(trail),
+    [trail],
+  );
   const strokeColor = getTrailStrokeColor(trail.trailColor);
   const outlineColor = getTrailOutlineColor(trail.trailColor);
   const trailColorMeta = TRAIL_COLOR_META[trail.trailColor];
@@ -419,16 +427,28 @@ export function MapFallback({
           )}
         </div>
 
-        <a
-          href={directionsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-[#FF4D1C] px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[#E03E12]"
-        >
-          <Navigation className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>Otwórz w Google Maps</span>
-          <ExternalLink className="h-3 w-3 opacity-80" aria-hidden="true" />
-        </a>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={routeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-[#FF4D1C] px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[#E03E12]"
+          >
+            <Navigation className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>Otwórz trasę w Google Maps</span>
+            <ExternalLink className="h-3 w-3 shrink-0 opacity-80" aria-hidden="true" />
+          </a>
+
+          <a
+            href={startNavUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/15"
+          >
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-[#16A34A]" aria-hidden="true" />
+            <span>Dojazd do startu</span>
+          </a>
+        </div>
       </div>
     </div>
   );

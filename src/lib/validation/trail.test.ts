@@ -18,7 +18,7 @@ const validPayload = {
   elevationGainM: 85,
   estimatedTimeMin: 80,
   isLoop: true,
-  coverImageUrl: "/images/trails/slaskie-1019753-cover.svg",
+  coverImageUrl: "/images/trails/slaskie-1019753-cover.jpg",
   sourceUrl: "https://slaskie.travel/route/1019753",
   sourceName: "SLASKIE.travel",
   gpxUrl: "/sample-gpx/slaskie-1019753.gpx",

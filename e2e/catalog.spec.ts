@@ -25,11 +25,14 @@ test.describe("Catalog & Filtering (E2E-01, E2E-02, E2E-03)", () => {
     const cardCount = await cards.count();
     expect(cardCount).toBeGreaterThanOrEqual(6);
 
+    const routePaths: string[] = [];
+
     for (let i = 0; i < cardCount; i += 1) {
       const card = cards.nth(i);
       const title = card.locator("h2");
       const description = card.locator("p");
       const img = card.locator("img");
+      const routePath = card.getByTestId("trail-card-route-path");
 
       await expect(title).toBeVisible();
       expect((await title.innerText()).trim().length).toBeGreaterThan(2);
@@ -40,9 +43,26 @@ test.describe("Catalog & Filtering (E2E-01, E2E-02, E2E-03)", () => {
       );
 
       await expect(img).toBeVisible();
+      const imgMetrics = await img.evaluate((el: HTMLImageElement) => ({
+        src: el.getAttribute("src") ?? el.currentSrc,
+        complete: el.complete,
+        naturalWidth: el.naturalWidth,
+      }));
+      expect(imgMetrics.src.toLowerCase()).not.toContain(".svg");
+      expect(imgMetrics.complete).toBe(true);
+      expect(imgMetrics.naturalWidth).toBeGreaterThan(0);
+
+      await expect(routePath).toBeVisible();
+      const pathD = await routePath.getAttribute("d");
+      expect(pathD).toBeTruthy();
+      expect(pathD?.startsWith("M ")).toBe(true);
+      routePaths.push(pathD!);
+
       await expect(card).toContainText("km");
       await expect(card).toContainText("↑");
     }
+
+    expect(new Set(routePaths).size).toBe(cardCount);
 
     await assertAllImagesLoaded(page);
     monitor.assertClean({ checkNotFound: true });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   APILoadingStatus,
   APIProvider,
@@ -25,6 +25,7 @@ import {
   getRouteBoundsAndCenter,
   getTrailOutlineColor,
   getTrailStrokeColor,
+  type LatLngPoint,
 } from "@/components/map/utils";
 
 export type MapTypeOption = "terrain" | "roadmap" | "hybrid";
@@ -36,7 +37,19 @@ export interface TrailGoogleMapProps {
   mapTypeId?: MapTypeOption;
   activePointIndex?: number | null;
   recenterTrigger?: number;
+  userPosition?: LatLngPoint | null;
+  userCenterTrigger?: number;
+  onFallbackChange?: (isFallback: boolean) => void;
   className?: string;
+}
+
+export function isPlausibleGoogleMapsApiKey(apiKey?: string): boolean {
+  const resolved = (
+    apiKey !== undefined
+      ? apiKey
+      : (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "")
+  ).trim();
+  return resolved.length >= 20 && resolved.startsWith("AIza");
 }
 
 interface SelectedInfoState {
@@ -56,6 +69,11 @@ const START_ICON_URI = createPinDataUri("#16A34A", "S");
 const END_ICON_URI = createPinDataUri("#E11D48", "M");
 const POI_ICON_URI = createPinDataUri("#0284C7", "P");
 const ACTIVE_ICON_URI = createPinDataUri("#FF4D1C", "•");
+const USER_GPS_ICON_URI = (() => {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="#38BDF8" fill-opacity="0.32"/><circle cx="18" cy="18" r="8" fill="#2563EB" stroke="#FFFFFF" stroke-width="3"/></svg>';
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+})();
 
 function getPoiCategoryLabel(category: string | null): string {
   if (!category) return "Punkt na trasie";
@@ -71,6 +89,8 @@ interface TrailMapInnerProps {
   mapTypeId: MapTypeOption;
   activePointIndex: number | null;
   recenterTrigger: number;
+  userPosition: LatLngPoint | null;
+  userCenterTrigger: number;
   onFallbackRequired: () => void;
 }
 
@@ -80,6 +100,8 @@ function TrailMapInner({
   mapTypeId,
   activePointIndex,
   recenterTrigger,
+  userPosition,
+  userCenterTrigger,
   onFallbackRequired,
 }: TrailMapInnerProps) {
   const map = useMap();
@@ -88,6 +110,7 @@ function TrailMapInner({
   const [selectedInfo, setSelectedInfo] = useState<SelectedInfoState | null>(
     null,
   );
+  const lastCenteredTriggerRef = useRef(0);
 
   const geometry = useMemo(() => getRouteBoundsAndCenter(trail), [trail]);
   const strokeColor = getTrailStrokeColor(trail.trailColor);
@@ -122,6 +145,24 @@ function TrailMapInner({
       map.panTo(geometry.center);
     }
   }, [map, geometry.bounds, geometry.center, recenterTrigger]);
+
+  // Center map once when first GPS fix arrives (or userCenterTrigger increments)
+  useEffect(() => {
+    if (
+      !map ||
+      !userPosition ||
+      userCenterTrigger <= 0 ||
+      userCenterTrigger === lastCenteredTriggerRef.current
+    ) {
+      return;
+    }
+    lastCenteredTriggerRef.current = userCenterTrigger;
+    map.panTo(userPosition);
+    const currentZoom = map.getZoom?.();
+    if (typeof currentZoom === "number" && currentZoom < 14) {
+      map.setZoom?.(14);
+    }
+  }, [map, userCenterTrigger, userPosition]);
 
   // Render double Polyline (outline + primary PTTK stroke)
   useEffect(() => {
@@ -288,6 +329,30 @@ function TrailMapInner({
           />
         ))}
 
+      {userPosition &&
+        (hasMapId ? (
+          <AdvancedMarker
+            position={userPosition}
+            zIndex={70}
+            title="Moja aktualna pozycja GPS"
+          >
+            <span
+              data-testid="gps-user-marker"
+              className="relative flex h-6 w-6 items-center justify-center"
+            >
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#38BDF8] opacity-75" />
+              <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-[#2563EB] shadow-md" />
+            </span>
+          </AdvancedMarker>
+        ) : (
+          <Marker
+            position={userPosition}
+            icon={USER_GPS_ICON_URI}
+            zIndex={70}
+            title="Moja aktualna pozycja GPS"
+          />
+        ))}
+
       {selectedInfo && (
         <InfoWindow
           position={selectedInfo.position}
@@ -332,6 +397,9 @@ export function TrailGoogleMap({
   mapTypeId = "terrain",
   activePointIndex = null,
   recenterTrigger = 0,
+  userPosition = null,
+  userCenterTrigger = 0,
+  onFallbackChange,
   className,
 }: TrailGoogleMapProps) {
   const [hasLoadError, setHasLoadError] = useState(false);
@@ -370,10 +438,14 @@ export function TrailGoogleMap({
     };
   }, []);
 
-  const isPlausibleGoogleMapsKey =
-    resolvedApiKey.length >= 20 && resolvedApiKey.startsWith("AIza");
+  const isPlausibleGoogleMapsKey = isPlausibleGoogleMapsApiKey(resolvedApiKey);
+  const isFallback = !isPlausibleGoogleMapsKey || hasLoadError;
 
-  if (!isPlausibleGoogleMapsKey || hasLoadError) {
+  useEffect(() => {
+    onFallbackChange?.(isFallback);
+  }, [isFallback, onFallbackChange]);
+
+  if (isFallback) {
     return (
       <MapFallback
         trail={trail}
@@ -421,6 +493,8 @@ export function TrailGoogleMap({
             mapTypeId={mapTypeId}
             activePointIndex={activePointIndex}
             recenterTrigger={recenterTrigger}
+            userPosition={userPosition}
+            userCenterTrigger={userCenterTrigger}
             onFallbackRequired={handleFallback}
           />
         </GoogleMap>

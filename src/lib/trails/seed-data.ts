@@ -73,7 +73,7 @@ Jedna z najprzyjemniejszych rekreacyjnych pętli w województwie śląskim, idea
     trailColor: "blue",
     estimatedTimeMin: 80,
     isLoop: true,
-    coverImageUrl: "/images/trails/slaskie-1019753-cover.svg",
+    coverImageUrl: "/images/trails/slaskie-1019753-cover.jpg",
     sourceUrl: "https://slaskie.travel/route/1019753",
     sourceName: "SLASKIE.travel",
     gpxUrl: "/sample-gpx/slaskie-1019753.gpx",
@@ -82,17 +82,17 @@ Jedna z najprzyjemniejszych rekreacyjnych pętli w województwie śląskim, idea
     images: [
       {
         id: "21111111-1111-4111-8111-000000000101",
-        url: "/images/trails/slaskie-1019753-cover.svg",
+        url: "/images/trails/slaskie-1019753-cover.jpg",
         caption: "Panorama jezior Pogoria III i IV w Dąbrowie Górniczej",
       },
       {
         id: "21111111-1111-4111-8111-000000000102",
-        url: "/images/trails/slaskie-1019753-1.svg",
+        url: "/images/trails/slaskie-1019753-1.jpg",
         caption: "Wydzielona asfaltowa ścieżka rowerowa wzdłuż brzegu Pogorii IV",
       },
       {
         id: "21111111-1111-4111-8111-000000000103",
-        url: "/images/trails/slaskie-1019753-2.svg",
+        url: "/images/trails/slaskie-1019753-2.jpg",
         caption: "Zacieniona aleja przez Park Zielona nad Czarną Przemszą",
       },
     ],
@@ -149,7 +149,7 @@ Ponad 85% pętli to równy asfalt i drobny tłuczeń kolejowy — trasa świetni
     trailColor: "red",
     estimatedTimeMin: 185,
     isLoop: true,
-    coverImageUrl: "/images/trails/zelazny-szlak-cover.svg",
+    coverImageUrl: "/images/trails/zelazny-szlak-cover.jpg",
     sourceUrl: "https://zelaznyszlak.pl",
     sourceName: "Żelazny Szlak",
     gpxUrl: null,
@@ -158,17 +158,17 @@ Ponad 85% pętli to równy asfalt i drobny tłuczeń kolejowy — trasa świetni
     images: [
       {
         id: "21111111-1111-4111-8111-000000000201",
-        url: "/images/trails/zelazny-szlak-cover.svg",
+        url: "/images/trails/zelazny-szlak-cover.jpg",
         caption: "Dawny nasyp kolejowy zamieniony w asfaltową drogę rowerową",
       },
       {
         id: "21111111-1111-4111-8111-000000000202",
-        url: "/images/trails/zelazny-szlak-1.svg",
+        url: "/images/trails/zelazny-szlak-1.jpg",
         caption: "Miejsce Obsługi Rowerzystów w klimacie dawnej stacyjki",
       },
       {
         id: "21111111-1111-4111-8111-000000000203",
-        url: "/images/trails/zelazny-szlak-2.svg",
+        url: "/images/trails/zelazny-szlak-2.jpg",
         caption: "Leśny wiadukt na pograniczu polsko-czeskim",
       },
     ],
@@ -213,7 +213,7 @@ Ponad 85% pętli to równy asfalt i drobny tłuczeń kolejowy — trasa świetni
     trailColor: "blue",
     estimatedTimeMin: 165,
     isLoop: false,
-    coverImageUrl: "/images/trails/velo-dunajec-cover.svg",
+    coverImageUrl: "/images/trails/velo-dunajec-cover.jpg",
     sourceUrl: "https://narowery.visitmalopolska.pl",
     sourceName: "VeloMałopolska",
     gpxUrl: "/sample-gpx/velo-dunajec.gpx",
@@ -222,17 +222,17 @@ Ponad 85% pętli to równy asfalt i drobny tłuczeń kolejowy — trasa świetni
     images: [
       {
         id: "21111111-1111-4111-8111-000000000301",
-        url: "/images/trails/velo-dunajec-cover.svg",
+        url: "/images/trails/velo-dunajec-cover.jpg",
         caption: "Przełom Dunajca widziany z Drogi Pienińskiej",
       },
       {
         id: "21111111-1111-4111-8111-000000000302",
-        url: "/images/trails/velo-dunajec-1.svg",
+        url: "/images/trails/velo-dunajec-1.jpg",
         caption: "Wapienne turnie Trzech Koron nad nurtem rzeki",
       },
       {
         id: "21111111-1111-4111-8111-000000000303",
-        url: "/images/trails/velo-dunajec-2.svg",
+        url: "/images/trails/velo-dunajec-2.jpg",
         caption: "Nowoczesna kładka rowerowa w dolinie Dunajca",
       },
     ],
@@ -290,7 +290,7 @@ Zalecamy rower **MTB (hardtail/full)** lub **gravel z oponą min. 42–45 mm** n
     trailColor: "red",
     estimatedTimeMin: 360,
     isLoop: false,
-    coverImageUrl: "/images/trails/orle-gniazda-cover.svg",
+    coverImageUrl: "/images/trails/orle-gniazda-cover.jpg",
     sourceUrl: "https://www.orlegniazda.pl",
     sourceName: "Szlak Orlich Gniazd",
     gpxUrl: null,
@@ -299,17 +299,17 @@ Zalecamy rower **MTB (hardtail/full)** lub **gravel z oponą min. 42–45 mm** n
     images: [
       {
         id: "21111111-1111-4111-8111-000000000401",
-        url: "/images/trails/orle-gniazda-cover.svg",
+        url: "/images/trails/orle-gniazda-cover.jpg",
         caption: "Wapienne ostańce i ruiny warowni na Szlaku Orlich Gniazd",
       },
       {
         id: "21111111-1111-4111-8111-000000000402",
-        url: "/images/trails/orle-gniazda-1.svg",
+        url: "/images/trails/orle-gniazda-1.jpg",
         caption: "Terenowy singletrack pod Grzędą Mirowsko-Bobolicką",
       },
       {
         id: "21111111-1111-4111-8111-000000000403",
-        url: "/images/trails/orle-gniazda-2.svg",
+        url: "/images/trails/orle-gniazda-2.jpg",
         caption: "Podjazd pod Zamek Ogrodzieniec na Górze Janowskiego",
       },
     ],
@@ -363,7 +363,7 @@ Podlaski odcinek **Wschodniego Szlaku Rowerowego Green Velo** w połączeniu z P
     trailColor: "green",
     estimatedTimeMin: 220,
     isLoop: false,
-    coverImageUrl: "/images/trails/green-velo-podlasie-cover.svg",
+    coverImageUrl: "/images/trails/green-velo-podlasie-cover.jpg",
     sourceUrl: "https://greenvelo.pl",
     sourceName: "Green Velo",
     gpxUrl: null,
@@ -372,17 +372,17 @@ Podlaski odcinek **Wschodniego Szlaku Rowerowego Green Velo** w połączeniu z P
     images: [
       {
         id: "21111111-1111-4111-8111-000000000501",
-        url: "/images/trails/green-velo-podlasie-cover.svg",
+        url: "/images/trails/green-velo-podlasie-cover.jpg",
         caption: "Rozlewiska Narwi i Biebrzy o poranku",
       },
       {
         id: "21111111-1111-4111-8111-000000000502",
-        url: "/images/trails/green-velo-podlasie-1.svg",
+        url: "/images/trails/green-velo-podlasie-1.jpg",
         caption: "Szutrowy odcinek w okolicach Tykocina i Pentowa",
       },
       {
         id: "21111111-1111-4111-8111-000000000503",
-        url: "/images/trails/green-velo-podlasie-2.svg",
+        url: "/images/trails/green-velo-podlasie-2.jpg",
         caption: "Drewniana kładka i wieża widokowa w Biebrzańskim PN",
       },
     ],
@@ -435,7 +435,7 @@ Podlaski odcinek **Wschodniego Szlaku Rowerowego Green Velo** w połączeniu z P
     trailColor: "blue",
     estimatedTimeMin: 170,
     isLoop: true,
-    coverImageUrl: "/images/trails/dolina-baryczy-cover.svg",
+    coverImageUrl: "/images/trails/dolina-baryczy-cover.jpg",
     sourceUrl: "https://dolnyslaskrowerem.pl",
     sourceName: "Dolny Śląsk Rowerem",
     gpxUrl: null,
@@ -444,17 +444,17 @@ Podlaski odcinek **Wschodniego Szlaku Rowerowego Green Velo** w połączeniu z P
     images: [
       {
         id: "21111111-1111-4111-8111-000000000601",
-        url: "/images/trails/dolina-baryczy-cover.svg",
+        url: "/images/trails/dolina-baryczy-cover.jpg",
         caption: "Grobla rowerowa między Stawami Milickimi",
       },
       {
         id: "21111111-1111-4111-8111-000000000602",
-        url: "/images/trails/dolina-baryczy-1.svg",
+        url: "/images/trails/dolina-baryczy-1.jpg",
         caption: "Asfaltowy szlak dawnej kolejki wąskotorowej",
       },
       {
         id: "21111111-1111-4111-8111-000000000603",
-        url: "/images/trails/dolina-baryczy-2.svg",
+        url: "/images/trails/dolina-baryczy-2.jpg",
         caption: "Wieża ornitologiczna w rezerwacie Stawy Milickie",
       },
     ],
@@ -507,7 +507,7 @@ Odcinek **Velo Baltica (R10 / EuroVelo 10)** z Ustki do Łeby i latarni Stilo to
     trailColor: "green",
     estimatedTimeMin: 255,
     isLoop: false,
-    coverImageUrl: "/images/trails/velo-baltica-cover.svg",
+    coverImageUrl: "/images/trails/velo-baltica-cover.jpg",
     sourceUrl: "https://velobaltica.pl",
     sourceName: "Velo Baltica / R10",
     gpxUrl: null,
@@ -516,17 +516,17 @@ Odcinek **Velo Baltica (R10 / EuroVelo 10)** z Ustki do Łeby i latarni Stilo to
     images: [
       {
         id: "21111111-1111-4111-8111-000000000701",
-        url: "/images/trails/velo-baltica-cover.svg",
+        url: "/images/trails/velo-baltica-cover.jpg",
         caption: "Nadmorski szlak R10 wśród wydm i sosnowych borów",
       },
       {
         id: "21111111-1111-4111-8111-000000000702",
-        url: "/images/trails/velo-baltica-1.svg",
+        url: "/images/trails/velo-baltica-1.jpg",
         caption: "Klify w Orzechowie i zejście nad otwarty Bałtyk",
       },
       {
         id: "21111111-1111-4111-8111-000000000703",
-        url: "/images/trails/velo-baltica-2.svg",
+        url: "/images/trails/velo-baltica-2.jpg",
         caption: "Okolice Jeziora Łebsko i ruchomych wydm",
       },
     ],

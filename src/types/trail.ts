@@ -23,6 +23,11 @@ export interface RoutePoint {
   distKm?: number;
 }
 
+export interface RoutePreviewPoint {
+  lat: number;
+  lng: number;
+}
+
 export interface RouteBounds {
   north: number;
   south: number;
@@ -102,7 +107,9 @@ export type TrailSummary = Pick<
   | "published"
   | "createdAt"
   | "updatedAt"
->;
+> & {
+  routePreviewPoints: RoutePreviewPoint[];
+};
 
 export interface TrailQueryParams {
   region?: RegionSlug | "all";

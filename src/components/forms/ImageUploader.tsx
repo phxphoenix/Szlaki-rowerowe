@@ -35,31 +35,31 @@ export interface ImageUploaderProps {
 
 export const PRESET_TRAIL_IMAGES = [
   {
-    url: "/images/trails/slaskie-1019753-cover.svg",
+    url: "/images/trails/slaskie-1019753-cover.jpg",
     label: "Śląskie · Jura",
   },
   {
-    url: "/images/trails/orle-gniazda-cover.svg",
+    url: "/images/trails/orle-gniazda-cover.jpg",
     label: "Orle Gniazda",
   },
   {
-    url: "/images/trails/velo-dunajec-cover.svg",
+    url: "/images/trails/velo-dunajec-cover.jpg",
     label: "Velo Dunajec",
   },
   {
-    url: "/images/trails/green-velo-podlasie-cover.svg",
+    url: "/images/trails/green-velo-podlasie-cover.jpg",
     label: "Green Velo",
   },
   {
-    url: "/images/trails/dolina-baryczy-cover.svg",
+    url: "/images/trails/dolina-baryczy-cover.jpg",
     label: "Dolina Baryczy",
   },
   {
-    url: "/images/trails/velo-baltica-cover.svg",
+    url: "/images/trails/velo-baltica-cover.jpg",
     label: "Velo Baltica",
   },
   {
-    url: "/images/trails/zelazny-szlak-cover.svg",
+    url: "/images/trails/zelazny-szlak-cover.jpg",
     label: "Żelazny Szlak",
   },
 ] as const;
@@ -127,7 +127,7 @@ export function ImageUploader({
 
     if (invalidFile) {
       setUrlError(
-        `Plik „${invalidFile.name}” ma niedozwolony format lub przekracza 10 MB (akceptujemy JPG, PNG, WebP, SVG).`,
+        `Plik „${invalidFile.name}” ma niedozwolony format lub przekracza 10 MB (akceptujemy JPG, PNG, WebP).`,
       );
       return;
     }
@@ -251,7 +251,7 @@ export function ImageUploader({
             type="text"
             value={coverImageUrl}
             onChange={(event) => onCoverImageChange(event.target.value)}
-            placeholder="/images/trails/slaskie-1019753-cover.svg lub https://..."
+            placeholder="/images/trails/slaskie-1019753-cover.jpg lub https://..."
             aria-invalid={Boolean(coverError)}
             aria-describedby={coverError ? "trail-cover-image-error" : undefined}
             className="text-base"
@@ -274,7 +274,7 @@ export function ImageUploader({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/svg+xml"
+              accept="image/jpeg,image/png,image/webp"
               multiple
               onChange={handleFileSelect}
               className="sr-only"

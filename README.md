@@ -8,21 +8,26 @@ Każdy szlak prezentowany jest jako bogaty artykuł z opisem, galerią zdjęć, 
 
 ## Kluczowe funkcje
 
-- **Katalog kafelkowy:** Przejrzyste karty szlaków na stronie głównej z fotografią okładkową, odznaką województwa, poziomem trudności, krótkim opisem i metrykami (`km`, `↑ m`, nawierzchnia).
+- **Katalog kafelkowy:** Przejrzyste karty szlaków na stronie głównej z prawdziwą fotografią krajobrazową (JPEG), miniaturowym podglądem śladu GPX (`RouteMiniMap`), odznaką województwa, poziomem trudności, krótkim opisem i metrykami (`km`, `↑ m`, nawierzchnia).
 - **Filtrowanie i sortowanie:**
   - Filtrowanie po wszystkich **16 województwach w Polsce** (szybki pasek „pastylek” dopasowany do kciuka na iPhonie).
   - Filtry trudności, nawierzchni, dystansu oraz wyszukiwarka pełnotekstowa.
   - Sortowanie: *Najnowsze*, *Najkrótsze*, *Najdłuższe*, *Największe przewyższenie*, *Od najłatwiejszych* — z pełną synchronizacją z adresem URL (`searchParams`).
-- **Centralna mapa Google Maps + GPX:**
+- **Centralna mapa Google Maps + GPX (Priorytet #1):**
   - Rysowanie trasy z pliku `.gpx` na mapie Google Maps (`Teren` / `Mapa` / `Satelita`) z automatycznym podglądem wektorowym SVG (`MapFallback`), gdy klucz Google Maps API nie jest ustawiony.
   - Interaktywny profil wysokościowy (`ElevationChart`) zsynchronizowany z mapą.
-  - Szybkie akcje w terenie: **Otwórz w Google Maps**, **Pobierz GPX** (z pliku lub generowany na żywo z punktów trasy) oraz **Udostępnij**.
+  - Pasek akcji terenowych:
+    - **Otwórz trasę w Google Maps** — generuje URL z całą trasą (parametry `origin`, `destination` oraz do 9 inteligentnych `waypoints` wyliczanych po skumulowanym dystansie Haversine, z pełną obsługą pętli `isLoop`).
+    - **Dojazd do startu** — nawigacja samochodowa bezpośrednio do punktu startowego szlaku.
+    - **Mapa 1:1 (My Maps)** — opcjonalne otwarcie dedykowanej mapy Google My Maps, jeśli trasa posiada skonfigurowany link.
+    - **Pobierz GPX** (z pliku lub generowany na żywo z punktów trasy) oraz **Udostępnij**.
+  - **Moja pozycja GPS** na mapie: geolokalizacja na żywo (`navigator.geolocation.watchPosition`) z pulsującym znacznikiem i wskaźnikiem dokładności.
 - **Panel dodawania i edycji szlaków (Wariant B — Full-stack):**
-  - Strony `/logowanie`, `/dodaj` oraz `/szlaki/[slug]/edytuj` chronione sesją właściciela (`HttpOnly` JWT cookie).
-  - **Importer z URL:** wklej link (np. `https://slaskie.travel/route/1019753`), aby automatycznie pobrać tytuł, opis, zdjęcie, region i źródło (z ochroną SSRF).
-  - Wgrywanie plików `.gpx` (parsowanie i podgląd trasy na żywo) oraz galerii zdjęć bezpośrednio do **Vercel Blob** (lub przez zewnętrzny URL / wbudowane ilustracje SVG przy braku tokena Blob).
+  - Strony `/logowanie`, `/dodaj` oraz `/szlaki/[slug]/edytuj` chronione sesją właściciela (`HttpOnly` JWT cookie) z ochroną brute-force (rate limiter: max 10 prób / 15 min, HTTP 429).
+  - **Importer z URL:** wklej link (np. `https://slaskie.travel/route/1019753`), aby automatycznie pobrać metadane ORAZ plik GPX (`parsedGpx`) z podglądem trasy na żywo (z pełną ochroną SSRF, DNS, limitem 5 MB i timeoutem 8s).
+  - Wgrywanie plików `.gpx` (parsowanie i podgląd na żywo) oraz galerii zdjęć bezpośrednio do **Vercel Blob** (wyłącznie bezpieczne obrazy rastrowe `image/jpeg`, `image/png`, `image/webp` bez SVG).
 - **Sportowa oprawa wizualna *Velo Pulse* & optymalizacja pod iPhone:**
-  - Kontrastowa paleta czytelna w pełnym słońcu (tryb jasny i ciemny), techniczna typografia telemetryczna (`Barlow Condensed`, `Plus Jakarta Sans`, `JetBrains Mono`), tryb PWA (`manifest.webmanifest`, ikony `180/192/512`), obsługa iOS Safe Areas i gestów swipe w galerii (`PhotoLightbox`).
+  - Kontrastowa paleta czytelna w pełnym słońcu (tryb jasny i ciemny), techniczna typografia telemetryczna (`Barlow Condensed`, `Plus Jakarta Sans`, `JetBrains Mono`), 21 prawdziwych zdjęć z Wikimedia Commons ([ATTRIBUTIONS.md](./public/images/trails/ATTRIBUTIONS.md)), tryb PWA (`manifest.webmanifest`, ikony `180/192/512`), obsługa iOS Safe Areas i gestów swipe w galerii (`PhotoLightbox`).
 
 ---
 
@@ -44,10 +49,12 @@ Każdy szlak prezentowany jest jako bogaty artykuł z opisem, galerią zdjęć, 
 Aplikacja wspiera dwa tryby pracy warstwy repozytorium (`src/lib/trails/repository.ts`):
 
 1. **Tryb lokalny (in-memory) — brak `DATABASE_URL`:**
-   - Jeśli zmienna `DATABASE_URL` nie jest ustawiona, aplikacja automatycznie uruchamia się z deterministycznym magazynem w pamięci zawierającym **7 predefiniowanych polskich szlaków** (w tym przykładowy szlak ze źródłem `https://slaskie.travel/route/1019753`, Velo Dunajec, Green Velo, Szlak Orlich Gniazd, Żelazny Szlak Rowerowy, Velo Baltica oraz Dolinę Baryczy) wraz z lokalnymi ilustracjami SVG i śladami GPX.
+   - Jeśli zmienna `DATABASE_URL` nie jest ustawiona, aplikacja automatycznie uruchamia się z deterministycznym magazynem w pamięci zawierającym **7 predefiniowanych polskich szlaków** (w tym przykładowy szlak ze źródłem `https://slaskie.travel/route/1019753`, Velo Dunajec, Green Velo, Szlak Orlich Gniazd, Żelazny Szlak Rowerowy, Velo Baltica oraz Dolinę Baryczy) wraz z 21 prawdziwymi fotografiami JPEG i śladami GPX.
+   - Zapytania `listTrails()` korzystają ze zoptymalizowanego, lekkiego rzutu miniatur tras `routePreviewPoints` (<= 48 punktów) i nie wczytują zbędnego pola `content`.
    - Tryb ten pozwala na natychmiastowe uruchomienie aplikacji lokalnie oraz wykonywanie testów E2E bez zewnętrznej bazy danych.
 2. **Tryb produkcyjny (Neon Postgres) — ustawione `DATABASE_URL`:**
-   - Gdy `DATABASE_URL` jest skonfigurowane, połączenie inicjowane jest leniwie przez `getDb()` w `src/db/index.ts` (bez `Proxy`, bezpieczne dla `next build`), a wszystkie operacje CRUD, filtrowanie i liczniki `regionCounts` wykonywane są bezpośrednio w bazie PostgreSQL (Neon + Drizzle ORM).
+   - Gdy `DATABASE_URL` jest skonfigurowane, połączenie inicjowane jest leniwie przez `getDb()` w `src/db/index.ts` (bez `Proxy`, bezpieczne dla `next build`), a wszystkie operacje CRUD, filtrowanie i liczniki `regionCounts` wykonywane są bezpośrednio w bazie PostgreSQL (Neon + Drizzle ORM) z atomowymi operacjami `db.batch`.
+   - Skrypt `scripts/bootstrap-db.ts` wywoływany w procesie budowania produkcyjnego używa bezpiecznego `seedDatabase({ force: false })` (`onConflictDoNothing`), dzięki czemu nie nadpisuje i nie usuwa danych użytkowników wprowadzonych w aplikacji.
 
 ---
 
@@ -56,10 +63,12 @@ Aplikacja wspiera dwa tryby pracy warstwy repozytorium (`src/lib/trails/reposito
 | Dokument | Opis |
 |---|---|
 | [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md) | Kompletny plan realizacji (Etapy 0–7), dobór modeli AI na każdy etap, checklisty i dziennik postępów |
+| [REFACTORING_PLAN.md](./REFACTORING_PLAN.md) | Plan i wdrożenie refaktoryzacji R1–R6: pełne trasy Google Maps (waypoints), miniatury GPX na kafelkach, 21 zdjęć JPEG, ochrona DB, bezpieczeństwo uploadu i rate-limit |
 | [MASTER_PROMPT.md](./MASTER_PROMPT.md) | Gotowy prompt do automatycznego wykonania całego planu w pętli test–poprawka |
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Architektura systemu, schemat PostgreSQL (Drizzle), kontrakty API, integracja Google Maps i zmienne środowiskowe |
 | [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md) | Sportowy design system *Velo Pulse*, paleta kolorów, typografia, specyfikacja komponentów i zasady UX dla iPhone |
 | [docs/TEST_PLAN.md](./docs/TEST_PLAN.md) | Strategia testów, macierz przypadków (unit, komponenty, API, E2E Desktop + iPhone) i protokół pętli naprawczej |
+| [public/images/trails/ATTRIBUTIONS.md](./public/images/trails/ATTRIBUTIONS.md) | Źródła, autorzy i licencje (CC-BY / CC-BY-SA / CC0) dla 21 fotografii szlaków |
 
 ---
 
@@ -86,6 +95,7 @@ Uzupełnij w `.env.local` (dla pracy z zewnętrznymi usługami; do uruchomienia 
 npm run db:push
 npm run db:seed
 ```
+> Domyślnie `db:seed` (oraz automatyczny `scripts/bootstrap-db.ts` podczas deploymentu na Vercel) działa bezpiecznie (`force: false` / `onConflictDoNothing`), nie usuwając ani nie modyfikując istniejących szlaków. Aby wymusić nadpisanie tras referencyjnych, uruchom: `npm run db:seed -- --force`.  
 *(Opcjonalnie `npm run db:generate` generuje pliki migracji Drizzle SQL w katalogu `drizzle/`).*
 
 ### 3. Uruchomienie lokalne

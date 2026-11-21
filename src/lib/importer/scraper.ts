@@ -1,9 +1,11 @@
 import dns from "node:dns/promises";
 import net from "node:net";
 import type { Difficulty, RegionSlug, Surface } from "@/lib/constants/regions";
+import { parseGpx, type ParsedGpxResult } from "@/lib/gpx/parser";
 
 const DEFAULT_TIMEOUT_MS = 8_000;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024; // 2 MB
+const MAX_GPX_RESPONSE_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_REDIRECTS = 3;
 const MAX_SHORT_DESCRIPTION_LENGTH = 360;
 
@@ -52,6 +54,7 @@ export interface ImportedTrailMetadata {
   elevationGainM: number | null;
   difficulty: Difficulty | null;
   surface: Surface | null;
+  parsedGpx?: ParsedGpxResult | null;
 }
 
 function stripIpv6BracketsAndZone(ip: string): string {
@@ -717,19 +720,22 @@ export function extractTrailMetadataFromHtml(
     elevationGainM: telemetry.elevationGainM,
     difficulty: telemetry.difficulty,
     surface: telemetry.surface,
+    parsedGpx: null,
   };
 }
 
 async function readResponseTextWithLimit(
   response: Response,
   maxBytes: number,
+  resourceLabel = "Docelowa strona",
+  limitLabel = "2 MB",
 ): Promise<string> {
   const contentLengthHeader = response.headers.get("content-length");
   if (contentLengthHeader) {
     const declaredLength = Number(contentLengthHeader);
     if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
       throw new UrlImportError(
-        "Docelowa strona przekracza maksymalny limit rozmiaru (2 MB).",
+        `${resourceLabel} przekracza maksymalny limit rozmiaru (${limitLabel}).`,
         422,
       );
     }
@@ -739,7 +745,7 @@ async function readResponseTextWithLimit(
     const text = await response.text();
     if (Buffer.byteLength(text, "utf8") > maxBytes) {
       throw new UrlImportError(
-        "Docelowa strona przekracza maksymalny limit rozmiaru (2 MB).",
+        `${resourceLabel} przekracza maksymalny limit rozmiaru (${limitLabel}).`,
         422,
       );
     }
@@ -759,7 +765,7 @@ async function readResponseTextWithLimit(
     if (totalBytes > maxBytes) {
       await reader.cancel().catch(() => undefined);
       throw new UrlImportError(
-        "Docelowa strona przekracza maksymalny limit rozmiaru (2 MB).",
+        `${resourceLabel} przekracza maksymalny limit rozmiaru (${limitLabel}).`,
         422,
       );
     }
@@ -779,37 +785,48 @@ function isRedirectStatus(status: number): boolean {
   );
 }
 
-/**
- * Bezpiecznie pobiera zewnętrzną stronę (ochrona SSRF, walidacja DNS,
- * kontrola przekierowań, timeout 8s, limit 2 MB) i zwraca ustrukturyzowane metadane szlaku.
- */
-export async function importTrailFromUrl(
-  rawUrl: string,
-  options?: ImportUrlOptions,
-): Promise<ImportedTrailMetadata> {
-  const fetchFn = options?.fetchFn ?? fetch;
-  const resolveDns = options?.resolveDns ?? defaultDnsResolver;
-  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+interface FetchSafeExternalTextConfig {
+  accept: string;
+  maxBytes: number;
+  timeoutMs: number;
+  fetchFn: typeof fetch;
+  resolveDns: DnsResolver;
+  resourceLabel: string;
+  limitLabel: string;
+  allowedContentTypes?: readonly string[];
+}
 
+async function fetchSafeExternalText(
+  rawUrl: string,
+  config: FetchSafeExternalTextConfig,
+): Promise<{ finalUrl: URL; text: string }> {
   let currentUrl = validateSafeExternalUrl(rawUrl);
   let response: Response | null = null;
 
-  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
-    await assertSafeResolvedHost(currentUrl, resolveDns);
+  for (
+    let redirectCount = 0;
+    redirectCount <= MAX_REDIRECTS;
+    redirectCount += 1
+  ) {
+    await assertSafeResolvedHost(currentUrl, config.resolveDns);
 
     try {
-      response = await fetchFn(currentUrl.toString(), {
+      response = await config.fetchFn(currentUrl.toString(), {
         method: "GET",
         redirect: "manual",
-        signal: AbortSignal.timeout(timeoutMs),
+        signal: AbortSignal.timeout(config.timeoutMs),
         headers: {
-          Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+          Accept: config.accept,
           "Accept-Language": "pl-PL,pl;q=0.9,en;q=0.8",
-          "User-Agent": "SzlakiRoweroweBot/1.0 (+https://szlaki-rowerowe.vercel.app)",
+          "User-Agent":
+            "SzlakiRoweroweBot/1.0 (+https://szlaki-rowerowe.vercel.app)",
         },
       });
     } catch (error) {
-      if (error instanceof SsrfBlockedError || error instanceof UrlImportError) {
+      if (
+        error instanceof SsrfBlockedError ||
+        error instanceof UrlImportError
+      ) {
         throw error;
       }
       if (error instanceof Error && error.name === "TimeoutError") {
@@ -833,7 +850,10 @@ export async function importTrailFromUrl(
         );
       }
       if (redirectCount === MAX_REDIRECTS) {
-        throw new UrlImportError("Zbyt wiele przekierowań podanego adresu URL.", 502);
+        throw new UrlImportError(
+          "Zbyt wiele przekierowań podanego adresu URL.",
+          502,
+        );
       }
       const nextRaw = new URL(location, currentUrl).toString();
       currentUrl = validateSafeExternalUrl(nextRaw);
@@ -854,19 +874,86 @@ export async function importTrailFromUrl(
     );
   }
 
-  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
-  if (
-    contentType &&
-    !contentType.includes("text/html") &&
-    !contentType.includes("application/xhtml+xml") &&
-    !contentType.includes("text/plain")
-  ) {
-    throw new UrlImportError(
-      `Podany adres nie zwraca strony HTML (${contentType}).`,
-      422,
-    );
+  if (config.allowedContentTypes) {
+    const contentType =
+      response.headers.get("content-type")?.toLowerCase() ?? "";
+    if (
+      contentType &&
+      !config.allowedContentTypes.some((allowed) =>
+        contentType.includes(allowed),
+      )
+    ) {
+      throw new UrlImportError(
+        `Podany adres nie zwraca strony HTML (${contentType}).`,
+        422,
+      );
+    }
   }
 
-  const html = await readResponseTextWithLimit(response, MAX_RESPONSE_BYTES);
-  return extractTrailMetadataFromHtml(html, currentUrl.toString());
+  const text = await readResponseTextWithLimit(
+    response,
+    config.maxBytes,
+    config.resourceLabel,
+    config.limitLabel,
+  );
+
+  return { finalUrl: currentUrl, text };
+}
+
+/**
+ * Bezpiecznie pobiera zewnętrzną stronę (ochrona SSRF, walidacja DNS,
+ * kontrola przekierowań, timeout 8s, limit 2 MB) oraz opcjonalny plik GPX (limit 5 MB)
+ * i zwraca ustrukturyzowane metadane szlaku wraz z `parsedGpx`.
+ */
+export async function importTrailFromUrl(
+  rawUrl: string,
+  options?: ImportUrlOptions,
+): Promise<ImportedTrailMetadata> {
+  const fetchFn = options?.fetchFn ?? fetch;
+  const resolveDns = options?.resolveDns ?? defaultDnsResolver;
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+
+  const { finalUrl, text: html } = await fetchSafeExternalText(rawUrl, {
+    accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+    maxBytes: MAX_RESPONSE_BYTES,
+    timeoutMs,
+    fetchFn,
+    resolveDns,
+    resourceLabel: "Docelowa strona",
+    limitLabel: "2 MB",
+    allowedContentTypes: ["text/html", "application/xhtml+xml", "text/plain"],
+  });
+
+  const metadata = extractTrailMetadataFromHtml(html, finalUrl.toString());
+
+  let parsedGpx: ParsedGpxResult | null = null;
+  const gpxCandidates =
+    metadata.gpxUrls.length > 0
+      ? metadata.gpxUrls
+      : metadata.gpxUrl
+        ? [metadata.gpxUrl]
+        : [];
+
+  for (const candidateUrl of gpxCandidates) {
+    try {
+      const { text: gpxXml } = await fetchSafeExternalText(candidateUrl, {
+        accept: "application/gpx+xml,application/xml,text/xml;q=0.9,*/*;q=0.8",
+        maxBytes: MAX_GPX_RESPONSE_BYTES,
+        timeoutMs,
+        fetchFn,
+        resolveDns,
+        resourceLabel: "Plik GPX",
+        limitLabel: "5 MB",
+      });
+      parsedGpx = parseGpx(gpxXml);
+      break;
+    } catch {
+      // Błąd pobrania/SSRF/limitu/parsowania GPX nie przerywa importu metadanych HTML.
+    }
+  }
+
+  return {
+    ...metadata,
+    parsedGpx,
+  };
 }

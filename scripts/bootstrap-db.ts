@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { isDatabaseConfigured } from "@/db";
-import { seedDatabase } from "./seed";
+import { migrateLegacySvgTrailImages, seedDatabase } from "./seed";
 
 async function bootstrapDatabase(): Promise<void> {
   if (!isDatabaseConfigured()) {
@@ -18,9 +18,14 @@ async function bootstrapDatabase(): Promise<void> {
   });
 
   console.info(
-    "[bootstrap-db] Upserting reference seed trails with authentic road/GPX geometries...",
+    "[bootstrap-db] Seeding missing reference trails without overwriting existing records...",
   );
-  await seedDatabase();
+  await seedDatabase({ force: false });
+
+  console.info(
+    "[bootstrap-db] Checking for legacy /images/trails/*.svg paths to migrate to JPEG...",
+  );
+  await migrateLegacySvgTrailImages();
 }
 
 bootstrapDatabase().catch((error) => {

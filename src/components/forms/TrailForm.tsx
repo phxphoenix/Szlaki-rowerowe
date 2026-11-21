@@ -135,6 +135,9 @@ export function TrailForm({
   const [published, setPublished] = useState(initialTrail?.published ?? true);
   const [sourceUrl, setSourceUrl] = useState(initialTrail?.sourceUrl ?? "");
   const [sourceName, setSourceName] = useState(initialTrail?.sourceName ?? "");
+  const [googleMapsEmbedUrl, setGoogleMapsEmbedUrl] = useState(
+    initialTrail?.googleMapsEmbedUrl ?? "",
+  );
 
   // GPX & Geometria
   const [gpxUrl, setGpxUrl] = useState(initialTrail?.gpxUrl ?? "");
@@ -247,6 +250,38 @@ export function TrailForm({
       clearFieldError("coverImageUrl");
     }
 
+    if (data.parsedGpx) {
+      const parsedGpx = data.parsedGpx;
+      setRoutePoints(parsedGpx.routePoints);
+      setBounds(parsedGpx.bounds);
+      setStartLat(parsedGpx.startLat);
+      setStartLng(parsedGpx.startLng);
+      setEndLat(parsedGpx.endLat);
+      setEndLng(parsedGpx.endLng);
+      setIsLoop(parsedGpx.isLoop);
+
+      if (parsedGpx.distanceKm > 0) {
+        setDistanceKmInput(String(parsedGpx.distanceKm));
+        clearFieldError("distanceKm");
+
+        setEstimatedTimeInput((prev) => {
+          if (prev.trim().length > 0) return prev;
+          return String(Math.max(1, Math.round((parsedGpx.distanceKm / 15) * 60)));
+        });
+      }
+
+      if (parsedGpx.hasElevation) {
+        setElevationGainInput(String(parsedGpx.elevationGainM));
+        clearFieldError("elevationGainM");
+      } else if (data.elevationGainM != null && data.elevationGainM >= 0) {
+        setElevationGainInput(String(data.elevationGainM));
+        clearFieldError("elevationGainM");
+      } else {
+        setElevationGainInput("0");
+        clearFieldError("elevationGainM");
+      }
+    }
+
     const importedUrls = Array.isArray(data.imageUrls) ? data.imageUrls : [];
     if (importedUrls.length > 0) {
       setImages((prev) => {
@@ -356,6 +391,7 @@ export function TrailForm({
       sourceUrl: sourceUrl.trim() || null,
       sourceName: sourceName.trim() || null,
       gpxUrl: gpxUrl.trim() || null,
+      googleMapsEmbedUrl: googleMapsEmbedUrl.trim() || null,
       routePoints,
       startLat,
       startLng,
@@ -1049,6 +1085,55 @@ export function TrailForm({
                   className="text-base"
                 />
               </div>
+            </div>
+
+            {/* Link do Google My Maps (opcjonalnie) */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="trail-google-maps-embed-url"
+                className="block text-sm font-semibold text-[var(--text-primary)]"
+              >
+                Link do Google My Maps{" "}
+                <span className="font-normal text-[var(--text-secondary)]">
+                  (opcjonalnie)
+                </span>
+              </label>
+              <Input
+                id="trail-google-maps-embed-url"
+                name="googleMapsEmbedUrl"
+                type="url"
+                inputMode="url"
+                value={googleMapsEmbedUrl}
+                onChange={(event) => {
+                  setGoogleMapsEmbedUrl(event.target.value);
+                  clearFieldError("googleMapsEmbedUrl");
+                }}
+                placeholder="https://www.google.com/maps/d/viewer?mid=..."
+                aria-invalid={Boolean(fieldErrors.googleMapsEmbedUrl)}
+                aria-describedby={
+                  fieldErrors.googleMapsEmbedUrl
+                    ? "trail-google-maps-embed-url-error"
+                    : "trail-google-maps-embed-url-help"
+                }
+                className="min-h-[44px] text-base"
+              />
+              {fieldErrors.googleMapsEmbedUrl ? (
+                <p
+                  id="trail-google-maps-embed-url-error"
+                  className="text-xs font-medium text-[var(--accent-danger)]"
+                >
+                  {fieldErrors.googleMapsEmbedUrl}
+                </p>
+              ) : (
+                <p
+                  id="trail-google-maps-embed-url-help"
+                  className="text-xs text-[var(--text-secondary)]"
+                >
+                  Opcjonalnie podepnij własną mapę 1:1 z{" "}
+                  <code className="font-mono">mymaps.google.com</code> lub{" "}
+                  <code className="font-mono">google.com/maps/d/...</code>, aby dodać na stronie szlaku bezpośredni przycisk „Mapa 1:1 (My Maps)”.
+                </p>
+              )}
             </div>
           </div>
         </section>

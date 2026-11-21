@@ -20,6 +20,7 @@ export interface DirectionsTrailInput {
   endLng?: number | null;
   routePoints?: ReadonlyArray<Pick<RoutePoint, "lat" | "lng">>;
   isLoop?: boolean;
+  googleMapsEmbedUrl?: string | null;
 }
 
 export interface DirectionsUrlOptions {
@@ -27,8 +28,45 @@ export interface DirectionsUrlOptions {
   waypoints?: ReadonlyArray<LatLngPoint>;
 }
 
+export interface ExtractWaypointsOptions {
+  maxWaypoints?: number;
+  isLoop?: boolean;
+  minSpacingMeters?: number;
+  minLoopEndpointMarginMeters?: number;
+}
+
+export interface BuildRouteUrlOptions {
+  maxWaypoints?: number;
+  forceDirections?: boolean;
+}
+
+const EARTH_RADIUS_METERS = 6_371_000;
+const GOOGLE_MAPS_MAX_URL_LENGTH = 2000;
+
 function isValidCoord(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function toRadians(deg: number): number {
+  return (deg * Math.PI) / 180;
+}
+
+/**
+ * Oblicza odległość geodezyjną (Haversine) w metrach między dwoma punktami.
+ * Czysta implementacja bez zależności serwerowych (bezpieczna dla bundle klienta).
+ */
+export function haversineMeters(a: LatLngPoint, b: LatLngPoint): number {
+  const dLat = toRadians(b.lat - a.lat);
+  const dLng = toRadians(b.lng - a.lng);
+  const lat1 = toRadians(a.lat);
+  const lat2 = toRadians(b.lat);
+
+  const sinLat = Math.sin(dLat / 2);
+  const sinLng = Math.sin(dLng / 2);
+  const h =
+    sinLat * sinLat + Math.cos(lat1) * Math.cos(lat2) * sinLng * sinLng;
+  const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(Math.max(0, 1 - h)));
+  return EARTH_RADIUS_METERS * c;
 }
 
 function formatLatLngParam(point: LatLngPoint): string {
@@ -37,37 +75,339 @@ function formatLatLngParam(point: LatLngPoint): string {
   return `${lat},${lng}`;
 }
 
+function resolveStartPoint(trail: DirectionsTrailInput): LatLngPoint | null {
+  if (isValidCoord(trail.startLat) && isValidCoord(trail.startLng)) {
+    return { lat: trail.startLat, lng: trail.startLng };
+  }
+  if (trail.routePoints && trail.routePoints.length > 0) {
+    const first = trail.routePoints[0];
+    if (isValidCoord(first.lat) && isValidCoord(first.lng)) {
+      return { lat: first.lat, lng: first.lng };
+    }
+  }
+  if (isValidCoord(trail.endLat) && isValidCoord(trail.endLng)) {
+    return { lat: trail.endLat, lng: trail.endLng };
+  }
+  return null;
+}
+
+function resolveEndPoint(
+  trail: DirectionsTrailInput,
+  fallbackStart: LatLngPoint | null,
+): LatLngPoint | null {
+  if (isValidCoord(trail.endLat) && isValidCoord(trail.endLng)) {
+    return { lat: trail.endLat, lng: trail.endLng };
+  }
+  if (trail.routePoints && trail.routePoints.length > 0) {
+    for (let i = trail.routePoints.length - 1; i >= 0; i -= 1) {
+      const pt = trail.routePoints[i];
+      if (isValidCoord(pt.lat) && isValidCoord(pt.lng)) {
+        return { lat: pt.lat, lng: pt.lng };
+      }
+    }
+  }
+  return fallbackStart;
+}
+
 /**
- * Buduje link Google Maps Directions (`travelmode=bicycling`) do punktu startu
- * trasy (lub pełnej trasy, jeśli przekazano `origin` / `waypoints`).
+ * Wybiera równomiernie rozłożone po skumulowanym dystansie geodezyjnym
+ * kluczowe punkty pośrednie (domyślnie maks. 9) z zachowaniem minimalnych odstępów.
+ */
+export function extractKeyRouteWaypoints(
+  routePoints: ReadonlyArray<LatLngPoint>,
+  options?: ExtractWaypointsOptions,
+): LatLngPoint[] {
+  const validPoints: LatLngPoint[] = [];
+  for (const pt of routePoints) {
+    if (isValidCoord(pt.lat) && isValidCoord(pt.lng)) {
+      validPoints.push({ lat: pt.lat, lng: pt.lng });
+    }
+  }
+
+  const n = validPoints.length;
+  if (n < 2) {
+    return [];
+  }
+
+  const isLoop = Boolean(options?.isLoop);
+  const maxWaypoints = Math.max(
+    0,
+    Math.min(Math.floor(options?.maxWaypoints ?? 9), 9),
+  );
+  if (maxWaypoints === 0) {
+    return [];
+  }
+
+  const minSpacingMeters = Math.max(0, options?.minSpacingMeters ?? 150);
+  const minLoopEndpointMarginMeters = Math.max(
+    0,
+    options?.minLoopEndpointMarginMeters ?? 200,
+  );
+
+  const cumMeters = new Array<number>(n);
+  cumMeters[0] = 0;
+  for (let i = 1; i < n; i += 1) {
+    cumMeters[i] =
+      cumMeters[i - 1] + haversineMeters(validPoints[i - 1], validPoints[i]);
+  }
+  const totalMeters = cumMeters[n - 1];
+  if (totalMeters <= 0) {
+    return [];
+  }
+
+  const startPoint = validPoints[0];
+  const lastPoint = validPoints[n - 1];
+  const startEndGap = haversineMeters(startPoint, lastPoint);
+  const isOpenEndpointLoop = isLoop && startEndGap >= minLoopEndpointMarginMeters;
+
+  if (!isLoop && n < 3) {
+    return [];
+  }
+
+  if (isOpenEndpointLoop) {
+    if (maxWaypoints === 1) {
+      return [lastPoint];
+    }
+
+    const intermediateLimit = maxWaypoints - 1;
+    const selected: LatLngPoint[] = [];
+    let prevIdx = 0;
+
+    for (let i = 1; i <= intermediateLimit; i += 1) {
+      const targetDist = (i / (intermediateLimit + 1)) * totalMeters;
+      let bestIdx = -1;
+      let bestDiff = Infinity;
+
+      for (let idx = prevIdx + 1; idx < n - 1; idx += 1) {
+        const candidate = validPoints[idx];
+        if (
+          haversineMeters(candidate, startPoint) < minLoopEndpointMarginMeters
+        ) {
+          continue;
+        }
+        if (haversineMeters(candidate, lastPoint) < minSpacingMeters) {
+          continue;
+        }
+        const prevAccepted = selected[selected.length - 1];
+        if (
+          prevAccepted &&
+          haversineMeters(candidate, prevAccepted) < minSpacingMeters
+        ) {
+          continue;
+        }
+
+        const diff = Math.abs(cumMeters[idx] - targetDist);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestIdx = idx;
+        }
+      }
+
+      if (bestIdx !== -1) {
+        selected.push(validPoints[bestIdx]);
+        prevIdx = bestIdx;
+      }
+    }
+
+    selected.push(lastPoint);
+    return selected;
+  }
+
+  const endpointMargin = isLoop ? minLoopEndpointMarginMeters : minSpacingMeters;
+  const selected: LatLngPoint[] = [];
+  let prevIdx = 0;
+
+  for (let i = 1; i <= maxWaypoints; i += 1) {
+    const targetDist = (i / (maxWaypoints + 1)) * totalMeters;
+    let bestIdx = -1;
+    let bestDiff = Infinity;
+
+    for (let idx = prevIdx + 1; idx < n - 1; idx += 1) {
+      const candidate = validPoints[idx];
+      if (haversineMeters(candidate, startPoint) < endpointMargin) {
+        continue;
+      }
+      if (haversineMeters(candidate, lastPoint) < endpointMargin) {
+        continue;
+      }
+      const prevAccepted = selected[selected.length - 1];
+      if (
+        prevAccepted &&
+        haversineMeters(candidate, prevAccepted) < minSpacingMeters
+      ) {
+        continue;
+      }
+
+      const diff = Math.abs(cumMeters[idx] - targetDist);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestIdx = idx;
+      }
+    }
+
+    if (bestIdx !== -1) {
+      selected.push(validPoints[bestIdx]);
+      prevIdx = bestIdx;
+    }
+  }
+
+  return selected;
+}
+
+/**
+ * Sprawdza, czy podany URL jest poprawnym linkiem do mapy Google My Maps
+ * (`mymaps.google.com` lub `google.*\/maps\/d\/...`).
+ */
+export function isGoogleMyMapsUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== "string") {
+    return false;
+  }
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return false;
+    }
+    if (parsed.username || parsed.password) {
+      return false;
+    }
+    const host = parsed.hostname.toLowerCase();
+    if (host === "mymaps.google.com") {
+      return true;
+    }
+    if (
+      /^(www\.|maps\.)?google\.([a-z]{2,3}|co\.[a-z]{2}|com\.[a-z]{2})$/i.test(
+        host,
+      ) &&
+      /^\/maps\/d\/[^/]+/.test(parsed.pathname)
+    ) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Buduje link Google Maps nawigacji wyłącznie do punktu startowego trasy
+ * (z bieżącej pozycji użytkownika: „Dojazd do startu”).
+ */
+export function buildGoogleMapsStartNavigationUrl(
+  trail: DirectionsTrailInput,
+): string {
+  const url = new URL("https://www.google.com/maps/dir/");
+  url.searchParams.set("api", "1");
+
+  const startPoint = resolveStartPoint(trail);
+  if (startPoint) {
+    url.searchParams.set("destination", formatLatLngParam(startPoint));
+  } else if (trail.region) {
+    url.searchParams.set(
+      "destination",
+      formatLatLngParam(getRegionInfo(trail.region).center),
+    );
+  } else {
+    url.searchParams.set("destination", trail.title?.trim() || "Polska");
+  }
+
+  url.searchParams.set("travelmode", "bicycling");
+  return url.toString();
+}
+
+/**
+ * Buduje link Google Maps do pełnej wyrysowanej trasy rowerowej
+ * (lub zwraca link Google My Maps, jeśli jest skonfigurowany i nie wymuszono trybu directions).
+ */
+export function buildGoogleMapsRouteUrl(
+  trail: DirectionsTrailInput,
+  options?: BuildRouteUrlOptions,
+): string {
+  if (!options?.forceDirections && isGoogleMyMapsUrl(trail.googleMapsEmbedUrl)) {
+    return trail.googleMapsEmbedUrl!.trim();
+  }
+
+  const routePoints = trail.routePoints ?? [];
+  if (routePoints.length < 2) {
+    return buildGoogleMapsStartNavigationUrl(trail);
+  }
+
+  const startPoint = resolveStartPoint(trail);
+  const endPoint = resolveEndPoint(trail, startPoint);
+  if (!startPoint || !endPoint) {
+    return buildGoogleMapsStartNavigationUrl(trail);
+  }
+
+  const isLoop = Boolean(trail.isLoop);
+  const destinationPoint = isLoop ? startPoint : endPoint;
+
+  const buildWithMaxWaypoints = (limit: number): string => {
+    const url = new URL("https://www.google.com/maps/dir/");
+    url.searchParams.set("api", "1");
+    url.searchParams.set("origin", formatLatLngParam(startPoint));
+    url.searchParams.set("destination", formatLatLngParam(destinationPoint));
+
+    if (limit > 0) {
+      const waypoints = extractKeyRouteWaypoints(routePoints, {
+        maxWaypoints: limit,
+        isLoop,
+      });
+      if (waypoints.length > 0) {
+        url.searchParams.set(
+          "waypoints",
+          waypoints.map(formatLatLngParam).join("|"),
+        );
+      }
+    }
+
+    url.searchParams.set("travelmode", "bicycling");
+    return url.toString();
+  };
+
+  let currentMax = Math.max(
+    0,
+    Math.min(Math.floor(options?.maxWaypoints ?? 9), 9),
+  );
+  let builtUrl = buildWithMaxWaypoints(currentMax);
+
+  while (builtUrl.length >= GOOGLE_MAPS_MAX_URL_LENGTH && currentMax > 0) {
+    currentMax -= 1;
+    builtUrl = buildWithMaxWaypoints(currentMax);
+  }
+
+  return builtUrl;
+}
+
+/**
+ * Buduje link Google Maps Directions (`travelmode=bicycling`):
+ * - gdy podano jawne `options.origin` lub `options.waypoints` — używa przekazanych parametrów,
+ * - gdy trasa ma >= 2 punkty GPX — generuje pełną trasę (`origin`, `destination`, `waypoints`),
+ * - w przeciwnym razie (np. pojedynczy punkt POI) — nawiguje do tego punktu.
  */
 export function buildGoogleMapsDirectionsUrl(
   trail: DirectionsTrailInput,
   options?: DirectionsUrlOptions,
 ): string {
+  const hasExplicitOverrides = Boolean(
+    options?.origin || (options?.waypoints && options.waypoints.length > 0),
+  );
+
+  if (!hasExplicitOverrides) {
+    if (trail.routePoints && trail.routePoints.length >= 2) {
+      return buildGoogleMapsRouteUrl(trail, { forceDirections: true });
+    }
+    return buildGoogleMapsStartNavigationUrl(trail);
+  }
+
   const url = new URL("https://www.google.com/maps/dir/");
   url.searchParams.set("api", "1");
 
-  const startPoint: LatLngPoint | null =
-    isValidCoord(trail.startLat) && isValidCoord(trail.startLng)
-      ? { lat: trail.startLat, lng: trail.startLng }
-      : trail.routePoints && trail.routePoints.length > 0
-        ? { lat: trail.routePoints[0].lat, lng: trail.routePoints[0].lng }
-        : isValidCoord(trail.endLat) && isValidCoord(trail.endLng)
-          ? { lat: trail.endLat, lng: trail.endLng }
-          : null;
-
-  const lastRoutePoint =
-    trail.routePoints && trail.routePoints.length > 0
-      ? trail.routePoints[trail.routePoints.length - 1]
-      : null;
-
-  const endPoint: LatLngPoint | null =
-    isValidCoord(trail.endLat) && isValidCoord(trail.endLng)
-      ? { lat: trail.endLat, lng: trail.endLng }
-      : lastRoutePoint
-        ? { lat: lastRoutePoint.lat, lng: lastRoutePoint.lng }
-        : startPoint;
+  const startPoint = resolveStartPoint(trail);
+  const endPoint = resolveEndPoint(trail, startPoint);
 
   if (
     options?.origin &&

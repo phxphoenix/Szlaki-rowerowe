@@ -99,11 +99,15 @@ Zdefiniowana jako zmienne CSS w `src/app/globals.css` (Tailwind CSS v4 `@theme i
 
 ## 5. Kluczowe komponenty UI
 
-### A. Kafelek szlaku (`TrailCard`)
+### A. Kafelek szlaku (`TrailCard`) i miniatura trasy (`RouteMiniMap`)
 - **Proporcje zdjęcia:** `aspect-[16/10]`, `rounded-2xl`, `overflow-hidden`, delikatny zoom zdjęcia (`scale-105 duration-500`) na hover (desktop).
-- **Nakładki na zdjęciu:**
-  - Lewy górny róg: Plakietka województwa (półprzezroczysty `bg-[#11161A]/80 backdrop-blur-md text-white`) z kropką koloru szlaku PTTK.
-  - Prawy górny róg: Plakietka poziomu trudności (`Łatwy` / `Średni` / `Trudny`) z semantycznym kolorem.
+- **Kompozycja 4 rogów na zdjęciu (brak nakładania się badge'ów na 390px i 1440px):**
+  - **Lewy górny róg:** Plakietka województwa (półprzezroczysty `bg-[#11161A]/80 backdrop-blur-md text-white`) z kropką koloru szlaku PTTK.
+  - **Prawy górny róg:** Plakietka poziomu trudności (`Łatwy` / `Średni` / `Trudny`) z semantycznym kolorem.
+  - **Lewy dolny róg:** Plakietka szacowanego czasu (`Clock` icon) lub typu nawierzchni.
+  - **Prawy dolny róg:** Kompaktowa nakładka miniatury trasy GPX `<RouteMiniMap variant="overlay" />` (`data-testid="trail-card-route-path"`) renderująca rzeczywisty ślad z podwójną linią kontrastową w kolorze szlaku oraz wskaźnikiem startu/mety.
+- **Odporność na błędy zdjęć (Graceful Fallback):**
+  - Jeśli zdjęcie okładkowe nie załaduje się (`onError`), karta płynnie przełącza się na pełny rzut wektorowy `<RouteMiniMap variant="full" />`, zachowując czytelność i układ kafelka.
 - **Część dolna karty:**
   - Tytuł szlaku (max 2 linie).
   - Krótki opis (max 2 linie, kolor `text-secondary`).
@@ -119,27 +123,35 @@ Zdefiniowana jako zmienne CSS w `src/app/globals.css` (Tailwind CSS v4 `@theme i
 - **Poziom 2 (Regiony Polski):** Poziomy, przewijalny pasek „pastylek” dla wszystkich 16 województw (+ `Cała Polska`) z opcjonalnym licznikiem dostępnych szlaków w danym regionie (np. `Śląskie (4)`). Aktywne województwo podświetlone kolorem `Blaze Orange`.
 - **Synchronizacja z URL:** Wszystkie aktywne filtry i sortowanie zapisywane w query params (`?region=slaskie&difficulty=easy&sort=distance_asc&q=wisla`) — link do przefiltrowanej listy można udostępnić lub odświeżyć bez utraty stanu.
 
-### C. Centralna sekcja mapy (`TrailMapSection`)
+### C. Centralna sekcja mapy (`TrailMapSection`) i akcje terenowe (`MapActionsBar`)
 - **Pozycja:** Centralny element widoku szczegółowego szlaku (`/szlaki/[slug]`).
 - **Wysokość:** `420px` na iPhone, `560px` na desktopie + tryb pełnoekranowy.
 - **Elementy na mapie (Google Maps API):**
   - Wyraźna linia trasy (`Polyline`, grubość `5px`, kolor zgodny z kolorem szlaku lub `#FF4D1C` z białą obwódką dla kontrastu na zdjęciach satelitarnych).
   - Niestandardowe markery `AdvancedMarker`: zielony **START**, flaga w szachownicę **META**, opcjonalne pinezki **POI** (punkty widokowe, parkingi, schroniska).
-  - **Floating Map HUD:** Przełącznik stylu mapy (`Teren` / `Mapa` / `Satelita`) + przycisk `Wyśrodkuj trasę`.
+  - **Floating Map HUD:**
+    - Przycisk **Moja pozycja GPS** (`Crosshair` icon, min. `44×44 px`, `aria-pressed`) z geolokalizacją na żywo, pulsującym znacznikiem i wskaźnikiem dokładności.
+    - Przełącznik stylów mapy (`Teren` / `Mapa` / `Satelita`) — w trybie `MapFallback` przełącznik stylów jest automatycznie ukrywany.
+    - Przycisk `Wyśrodkuj trasę` i `Pełny ekran`.
 - **Zintegrowany Profil Wysokościowy (`ElevationChart`):**
   - Bezpośrednio pod mapą (jeśli GPX zawiera dane wysokościowe `<ele>`).
   - Wykres obszarowy w kolorze `Blaze Orange` / `Sky Telemetry` pokazujący profil wzniesień wzdłuż dystansu.
   - Interakcja: najechanie/dotknięcie punktu na wykresie pokazuje wysokość i dystans oraz dynamicznie przesuwa marker podglądu na mapie Google Maps.
-- **Pasek akcji terenowych (Sticky Bottom Bar na iPhone, inline na desktopie):**
-  - Główny przycisk (`Blaze Orange`): **Otwórz w Google Maps** (otwiera punkt startowy lub trasę bezpośrednio w aplikacji Google Maps).
-  - Drugi przycisk: **Pobierz GPX** (pobiera plik `.gpx` gotowy do Garmina/Wahoo/Komoot).
-  - Link do oryginalnego artykułu/źródła (np. `slaskie.travel/route/1019753`).
+- **Pasek akcji terenowych (`MapActionsBar` — Sticky Bottom Bar na iPhone, inline na desktopie):**
+  - Główny przycisk (`Blaze Orange`): **Otwórz trasę w Google Maps** — otwiera wyrysowaną całą trasę (z `origin`, `destination` i inteligentnymi `waypoints` w trybie rowerowym).
+  - Drugi przycisk: **Dojazd do startu** — wyznacza trasę do punktu startowego szlaku.
+  - Warunkowy przycisk: **Mapa 1:1 (My Maps)** — dostępny, gdy trasa posiada link Google My Maps.
+  - Przyciski narzędziowe: **Pobierz GPX** (plik z Vercel Blob lub generowany na żywo) oraz **Udostępnij** (`navigator.share` / clipboard).
+  - Wszystkie cele dotykowe spełniają normę iOS `min-h-[44px]`.
 
-### D. Galeria zdjęć (`TrailGallery`)
+### D. Galeria zdjęć i komponenty fotograficzne (`TrailGallery`, `PhotoLightbox`, `TrailHeroImage`)
+- **Prawdziwe fotografie krajobrazowe:** Wszystkie 7 szlaków posiada po 3 zoptymalizowane fotografie JPEG (1200 px, 72–249 KB) z legalną atrybucją w `ATTRIBUTIONS.md`.
 - Siatka miniatur na desktopie + pełnoekranowy **Lightbox** ze wsparciem klawiatury (`←`, `→`, `Esc`) oraz gestów **swipe** na iPhonie.
 - Licznik zdjęć (`2 / 6`) i podpisy pod zdjęciami.
+- Komponenty `TrailGallery`, `PhotoLightbox` oraz `TrailHeroImage` wyposażone w obsługę zdarzenia `onError`, zabezpieczającą przed przerwaniem renderu przy niedostępności obrazu.
 
 ### E. Formularz dodawania / edycji szlaku (`/dodaj`, `/szlaki/[slug]/edytuj`)
-- **Sekcja Szybkiego Importu z URL:** Pole do wklejenia linku (np. `https://slaskie.travel/route/1019753`) + przycisk „Pobierz dane ze strony”, który automatycznie uzupełnia tytuł, opis, zdjęcie główne, źródło i ewentualnie wykryte parametry.
-- **Strefa Drag & Drop na plik `.gpx`:** Po wrzuceniu pliku natychmiast parsuje trasę po stronie klienta, pokazuje podgląd na żywo na Google Maps oraz automatycznie wylicza dystans (km) i przewyższenie (m)!
-- **Upload wielu zdjęć** bezpośrednio do Vercel Blob z podglądem miniatur i możliwością wyboru zdjęcia okładkowego.
+- **Sekcja Szybkiego Importu z URL:** Pole do wklejenia linku (np. `https://slaskie.travel/route/1019753`) + przycisk „Pobierz dane ze strony”. Automatycznie uzupełnia metadane ORAZ pobiera i parsuje ślad GPX (`parsedGpx`), natychmiast wyświetlając podgląd geometrii na mapie!
+- **Strefa Drag & Drop na plik `.gpx`:** Po wrzuceniu pliku natychmiast parsuje trasę po stronie klienta, pokazuje podgląd na żywo na Google Maps oraz automatycznie wylicza dystans (km) i przewyższenie (m).
+- **Upload zdjęć:** Direct upload do Vercel Blob z akceptacją wyłącznie bezpiecznych formatów rastrowych JPG/PNG/WebP (brak SVG), podglądem miniatur i możliwością wyboru zdjęcia okładkowego z prawdziwych presetów.
+- **Opcjonalne pole Google My Maps:** Pole `googleMapsEmbedUrl` z walidacją adresu URL.

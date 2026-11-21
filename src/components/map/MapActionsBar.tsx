@@ -1,11 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Download, ExternalLink, Navigation, Share2 } from "lucide-react";
+import {
+  Check,
+  Compass,
+  Download,
+  ExternalLink,
+  MapPin,
+  Navigation,
+  Share2,
+} from "lucide-react";
 import { generateGpxXml } from "@/lib/gpx/parser";
 import { cn } from "@/lib/utils/cn";
 import type { Trail } from "@/types/trail";
-import { buildGoogleMapsDirectionsUrl } from "@/components/map/utils";
+import {
+  buildGoogleMapsRouteUrl,
+  buildGoogleMapsStartNavigationUrl,
+  isGoogleMyMapsUrl,
+} from "@/components/map/utils";
 
 export interface MapActionsBarProps {
   trail: Trail;
@@ -38,7 +50,21 @@ export function MapActionsBar({ trail, className }: MapActionsBarProps) {
     };
   }, []);
 
-  const directionsUrl = useMemo(() => buildGoogleMapsDirectionsUrl(trail), [trail]);
+  const routeUrl = useMemo(
+    () => buildGoogleMapsRouteUrl(trail, { forceDirections: true }),
+    [trail],
+  );
+  const startNavUrl = useMemo(
+    () => buildGoogleMapsStartNavigationUrl(trail),
+    [trail],
+  );
+  const myMapsUrl = useMemo(
+    () =>
+      isGoogleMyMapsUrl(trail.googleMapsEmbedUrl)
+        ? trail.googleMapsEmbedUrl!.trim()
+        : null,
+    [trail.googleMapsEmbedUrl],
+  );
   const hasRoutePoints = trail.routePoints.length >= 2;
   const canDownloadGpx = Boolean(trail.gpxUrl) || hasRoutePoints;
   const gpxFilename = `${trail.slug || "szlak"}.gpx`;
@@ -133,33 +159,66 @@ export function MapActionsBar({ trail, className }: MapActionsBarProps) {
     <div
       data-testid="map-actions-bar"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]/95 px-3 pt-2.5 shadow-[0_-8px_24px_rgba(17,22,26,0.12)] backdrop-blur-md safe-bottom md:static md:z-auto md:rounded-2xl md:border md:p-4 md:shadow-sm",
+        "fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]/95 px-3 pt-2 shadow-[0_-8px_24px_rgba(17,22,26,0.12)] backdrop-blur-md safe-bottom md:static md:z-auto md:rounded-2xl md:border md:p-4 md:shadow-sm",
         className,
       )}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-initial sm:gap-3">
-          {/* Primary Field CTA: Google Maps Directions */}
+      <div className="mx-auto flex max-w-7xl flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 md:flex-initial">
+          {/* Primary Field CTA: Full Cycling Route in Google Maps */}
           <a
-            href={directionsUrl}
+            href={routeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-primary)] px-3 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[var(--accent-primary-hover)] active:scale-[0.98] sm:flex-initial sm:px-5 sm:text-sm"
+            className="inline-flex min-h-[44px] flex-auto items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-primary)] px-3 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[var(--accent-primary-hover)] active:scale-[0.98] sm:flex-initial sm:px-4 sm:text-sm"
           >
             <Navigation className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">Otwórz w Google Maps</span>
+            <span className="whitespace-nowrap">Otwórz trasę w Google Maps</span>
             <ExternalLink
               className="hidden h-3.5 w-3.5 shrink-0 opacity-85 sm:inline"
               aria-hidden="true"
             />
           </a>
 
-          {/* Secondary Action: Download GPX */}
+          {/* Secondary Google CTA: Navigate to Trail Start */}
+          <a
+            href={startNavUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-surface-muted)] sm:px-3.5 sm:text-sm"
+          >
+            <MapPin
+              className="h-4 w-4 shrink-0 text-[#16A34A]"
+              aria-hidden="true"
+            />
+            <span className="whitespace-nowrap">Dojazd do startu</span>
+          </a>
+
+          {/* Optional Google My Maps 1:1 Link */}
+          {myMapsUrl && (
+            <a
+              href={myMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[var(--accent-telemetry)]/35 bg-[var(--accent-telemetry)]/10 px-3 py-2 text-xs font-semibold text-[var(--accent-telemetry)] transition-colors hover:bg-[var(--accent-telemetry)]/15 sm:px-3.5 sm:text-sm"
+            >
+              <Compass className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="whitespace-nowrap">Mapa 1:1 (My Maps)</span>
+              <ExternalLink
+                className="hidden h-3 w-3 shrink-0 opacity-80 sm:inline"
+                aria-hidden="true"
+              />
+            </a>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 md:justify-end">
+          {/* Download GPX */}
           {trail.gpxUrl && trail.gpxUrl.startsWith("/") ? (
             <a
               href={trail.gpxUrl}
               download={gpxFilename}
-              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--border-subtle)] sm:px-4 sm:text-sm"
+              className="inline-flex min-h-[44px] flex-1 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--border-subtle)] sm:flex-initial sm:px-4 sm:text-sm"
             >
               <Download
                 className="h-4 w-4 shrink-0 text-[var(--accent-telemetry)]"
@@ -172,7 +231,7 @@ export function MapActionsBar({ trail, className }: MapActionsBarProps) {
               type="button"
               onClick={handleGeneratedOrRemoteGpxDownload}
               disabled={!canDownloadGpx || isDownloadingGpx}
-              className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--border-subtle)] disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm"
+              className="inline-flex min-h-[44px] flex-1 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--border-subtle)] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-initial sm:px-4 sm:text-sm"
             >
               <Download
                 className="h-4 w-4 shrink-0 text-[var(--accent-telemetry)]"
@@ -181,9 +240,7 @@ export function MapActionsBar({ trail, className }: MapActionsBarProps) {
               <span className="whitespace-nowrap">Pobierz GPX</span>
             </button>
           )}
-        </div>
 
-        <div className="flex shrink-0 items-center gap-2">
           {trail.sourceUrl && (
             <a
               href={trail.sourceUrl}
@@ -216,7 +273,7 @@ export function MapActionsBar({ trail, className }: MapActionsBarProps) {
             ) : (
               <>
                 <Share2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="sr-only sm:not-sr-only">Udostępnij</span>
+                <span className="sm:not-sr-only">Udostępnij</span>
               </>
             )}
           </button>

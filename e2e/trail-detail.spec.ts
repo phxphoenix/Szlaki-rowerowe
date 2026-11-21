@@ -72,22 +72,54 @@ test.describe("Trail Detail View (E2E-04)", () => {
       const pathD = await routePath.getAttribute("d");
       expect(pathD).toBeTruthy();
       expect(pathD?.startsWith("M ")).toBe(true);
+
+      // In fallback mode, Teren / Mapa / Satelita layer switcher must be hidden
+      await expect(page.getByRole("button", { name: /^Teren$/i })).toHaveCount(
+        0,
+      );
+      await expect(page.getByRole("button", { name: /^Mapa$/i })).toHaveCount(
+        0,
+      );
+      await expect(
+        page.getByRole("button", { name: /^Satelita$/i }),
+      ).toHaveCount(0);
     }
 
     // Elevation chart
     await expect(page.getByTestId("elevation-chart")).toBeVisible();
     await expect(page.getByTestId("elevation-chart-svg")).toBeVisible();
 
-    // Google Maps navigation CTA link
+    // Google Maps navigation CTA links (full route + Dojazd do startu)
     const actionsBar = page.getByTestId("map-actions-bar");
     await expect(actionsBar).toBeVisible();
     const gmapsLink = actionsBar.getByRole("link", {
-      name: /Otwórz w Google Maps/i,
+      name: /Otwórz trasę w Google Maps/i,
     });
     await expect(gmapsLink).toBeVisible();
     const gmapsHref = await gmapsLink.getAttribute("href");
     expect(gmapsHref).toMatch(/^https:\/\/www\.google\.com\/maps\/dir\//);
+    expect(gmapsHref).toContain("origin=");
+    expect(gmapsHref).toContain("destination=");
+    expect(gmapsHref).toContain("waypoints=");
     expect(gmapsHref).toContain("travelmode=bicycling");
+    expect(gmapsHref).toMatch(/(\||%7C)/);
+
+    const parsedRouteUrl = new URL(gmapsHref!);
+    expect(parsedRouteUrl.searchParams.get("origin")).toBeTruthy();
+    expect(parsedRouteUrl.searchParams.get("destination")).toBeTruthy();
+    expect(parsedRouteUrl.searchParams.get("travelmode")).toBe("bicycling");
+    const waypointsParam = parsedRouteUrl.searchParams.get("waypoints") ?? "";
+    const waypointCoords = waypointsParam.split("|").filter(Boolean);
+    expect(waypointCoords.length).toBeGreaterThanOrEqual(3);
+
+    const startNavLink = actionsBar.getByRole("link", {
+      name: /Dojazd do startu/i,
+    });
+    await expect(startNavLink).toBeVisible();
+    const startNavHref = await startNavLink.getAttribute("href");
+    expect(startNavHref).toMatch(/^https:\/\/www\.google\.com\/maps\/dir\//);
+    expect(startNavHref).toContain("destination=");
+    expect(startNavHref).toContain("travelmode=bicycling");
 
     // Article content & POIs
     const articleProse = page.locator("article .trail-prose");
@@ -108,6 +140,22 @@ test.describe("Trail Detail View (E2E-04)", () => {
       name: /Otwórz zdjęcie/i,
     });
     expect(await thumbButtons.count()).toBe(3);
+
+    const galleryImages = gallerySection.locator("img");
+    const galleryImageCount = await galleryImages.count();
+    expect(galleryImageCount).toBe(3);
+    for (let i = 0; i < galleryImageCount; i += 1) {
+      const img = galleryImages.nth(i);
+      await img.scrollIntoViewIfNeeded();
+      const metrics = await img.evaluate((el: HTMLImageElement) => ({
+        src: el.getAttribute("src") ?? el.currentSrc,
+        complete: el.complete,
+        naturalWidth: el.naturalWidth,
+      }));
+      expect(metrics.src.toLowerCase()).not.toContain(".svg");
+      expect(metrics.complete).toBe(true);
+      expect(metrics.naturalWidth).toBeGreaterThan(0);
+    }
 
     await thumbButtons.first().click();
 

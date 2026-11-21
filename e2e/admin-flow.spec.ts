@@ -68,7 +68,7 @@ test.describe("Owner Auth, Trail Creation & Cleanup Flow (E2E-05)", () => {
     // Choose cover preset
     await page.getByRole("button", { name: /Velo Dunajec/i }).click();
     await expect(page.locator("#trail-cover-image")).toHaveValue(
-      "/images/trails/velo-dunajec-cover.svg",
+      "/images/trails/velo-dunajec-cover.jpg",
     );
 
     // Submit form
@@ -83,13 +83,20 @@ test.describe("Owner Auth, Trail Creation & Cleanup Flow (E2E-05)", () => {
       page.getByRole("heading", { level: 1, name: uniqueTitle }),
     ).toBeVisible();
 
-    // 5. Verify new trail appears on home catalog /
+    // 5. Verify new trail appears on home catalog / with GPX route minimap
     await page.goto("/");
     const createdCardLink = page.locator(
       `main#katalog a[href="/szlaki/${createdSlug}"]`,
     );
     await expect(createdCardLink).toBeVisible();
     await expect(createdCardLink).toContainText(uniqueTitle);
+    const createdRoutePath = createdCardLink.getByTestId(
+      "trail-card-route-path",
+    );
+    await expect(createdRoutePath).toBeVisible();
+    const createdPathD = await createdRoutePath.getAttribute("d");
+    expect(createdPathD).toBeTruthy();
+    expect(createdPathD?.startsWith("M ")).toBe(true);
 
     // 6. Navigate to edit page and delete via confirmation modal
     await createdCardLink.click();

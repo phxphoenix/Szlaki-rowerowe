@@ -14,6 +14,7 @@ import {
   Trash2,
   TrendingUp,
 } from "lucide-react";
+import { PRESET_TRAIL_IMAGES } from "@/components/forms/ImageUploader";
 import { TrailGoogleMap } from "@/components/map/TrailGoogleMap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,7 +127,7 @@ export function GpxDropzone({
       elevationGainM: Number.isFinite(elevationGainM) ? elevationGainM : 0,
       estimatedTimeMin: null,
       isLoop,
-      coverImageUrl: "/images/trails/slaskie-1019753-cover.svg",
+      coverImageUrl: PRESET_TRAIL_IMAGES[0].url,
       sourceUrl: null,
       sourceName: null,
       gpxUrl: gpxUrl || null,

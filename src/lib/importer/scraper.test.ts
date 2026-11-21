@@ -185,5 +185,181 @@ describe("IMP-01 & IMP-02: URL Importer & SSRF protection", () => {
 
     expect(okResult.title).toBe("Pogoria Test");
     expect(okResult.region).toBe("slaskie");
+    expect(okResult.parsedGpx).toBeNull();
+  });
+
+  it("IMP-03: auto-fetches and parses GPX when gpxUrl is found under SSRF protection", async () => {
+    const sampleGpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Pogoria Loop</name>
+    <trkseg>
+      <trkpt lat="50.3510" lon="19.1910"><ele>260</ele></trkpt>
+      <trkpt lat="50.3620" lon="19.2050"><ele>275</ele></trkpt>
+      <trkpt lat="50.3550" lon="19.2210"><ele>268</ele></trkpt>
+      <trkpt lat="50.3511" lon="19.1911"><ele>261</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>`;
+
+    const requestedUrls: string[] = [];
+    const result = await importTrailFromUrl(
+      "https://slaskie.travel/route/1019753",
+      {
+        resolveDns: async () => [{ address: "93.184.216.34", family: 4 }],
+        fetchFn: async (input) => {
+          const url = String(input);
+          requestedUrls.push(url);
+          if (url.includes("/download/route/gpx/1019753")) {
+            return new Response(sampleGpx, {
+              status: 200,
+              headers: { "content-type": "application/gpx+xml" },
+            });
+          }
+          return new Response(
+            `<html><head><meta property="og:title" content="Pogoria GPX" /></head><body><a href="/download/route/gpx/1019753">GPX</a></body></html>`,
+            {
+              status: 200,
+              headers: { "content-type": "text/html; charset=utf-8" },
+            },
+          );
+        },
+      },
+    );
+
+    expect(requestedUrls).toEqual([
+      "https://slaskie.travel/route/1019753",
+      "https://slaskie.travel/download/route/gpx/1019753",
+    ]);
+    expect(result.title).toBe("Pogoria GPX");
+    expect(result.gpxUrl).toBe(
+      "https://slaskie.travel/download/route/gpx/1019753",
+    );
+    expect(result.parsedGpx).not.toBeNull();
+    expect(result.parsedGpx?.routePoints).toHaveLength(4);
+    expect(result.parsedGpx?.distanceKm).toBeGreaterThan(0);
+    expect(result.parsedGpx?.elevationGainM).toBe(15);
+    expect(result.parsedGpx?.isLoop).toBe(true);
+    expect(result.parsedGpx?.bounds).toEqual({
+      north: 50.362,
+      south: 50.351,
+      east: 19.221,
+      west: 19.191,
+    });
+  });
+
+  it("IMP-03: returns parsedGpx: null without failing import on GPX SSRF block, 404, malformed XML, or >5MB size", async () => {
+    const publicDns = async () => [{ address: "93.184.216.34", family: 4 }];
+
+    // 1. GPX link pointing to private IP (SSRF blocked)
+    const ssrfGpxResult = await importTrailFromUrl(
+      "https://example.org/trasy/ssrf-gpx",
+      {
+        resolveDns: publicDns,
+        fetchFn: async (input) => {
+          const url = String(input);
+          if (url.includes("127.0.0.1")) {
+            throw new Error("Should not fetch private IP GPX");
+          }
+          return new Response(
+            `<html><head><title>Szlak SSRF Test</title></head><body><a href="http://127.0.0.1/secret.gpx">GPX</a></body></html>`,
+            { status: 200, headers: { "content-type": "text/html" } },
+          );
+        },
+      },
+    );
+    expect(ssrfGpxResult.title).toBe("Szlak SSRF Test");
+    expect(ssrfGpxResult.parsedGpx).toBeNull();
+
+    // 2. GPX redirect to AWS metadata endpoint
+    const redirectSsrfResult = await importTrailFromUrl(
+      "https://example.org/trasy/redirect-gpx",
+      {
+        resolveDns: publicDns,
+        fetchFn: async (input) => {
+          const url = String(input);
+          if (url.endsWith(".gpx")) {
+            return new Response(null, {
+              status: 302,
+              headers: {
+                location: "http://169.254.169.254/latest/meta-data/",
+              },
+            });
+          }
+          return new Response(
+            `<html><head><title>Szlak Redirect</title></head><body><a href="/track.gpx">GPX</a></body></html>`,
+            { status: 200, headers: { "content-type": "text/html" } },
+          );
+        },
+      },
+    );
+    expect(redirectSsrfResult.title).toBe("Szlak Redirect");
+    expect(redirectSsrfResult.parsedGpx).toBeNull();
+
+    // 3. GPX 404
+    const notFoundResult = await importTrailFromUrl(
+      "https://example.org/trasy/404-gpx",
+      {
+        resolveDns: publicDns,
+        fetchFn: async (input) => {
+          if (String(input).endsWith(".gpx")) {
+            return new Response("Not Found", { status: 404 });
+          }
+          return new Response(
+            `<html><head><title>Szlak 404</title></head><body><a href="/missing.gpx">GPX</a></body></html>`,
+            { status: 200, headers: { "content-type": "text/html" } },
+          );
+        },
+      },
+    );
+    expect(notFoundResult.title).toBe("Szlak 404");
+    expect(notFoundResult.parsedGpx).toBeNull();
+
+    // 4. Malformed GPX XML
+    const malformedResult = await importTrailFromUrl(
+      "https://example.org/trasy/bad-xml",
+      {
+        resolveDns: publicDns,
+        fetchFn: async (input) => {
+          if (String(input).endsWith(".gpx")) {
+            return new Response("<gpx><broken>", {
+              status: 200,
+              headers: { "content-type": "application/gpx+xml" },
+            });
+          }
+          return new Response(
+            `<html><head><title>Szlak Bad XML</title></head><body><a href="/bad.gpx">GPX</a></body></html>`,
+            { status: 200, headers: { "content-type": "text/html" } },
+          );
+        },
+      },
+    );
+    expect(malformedResult.title).toBe("Szlak Bad XML");
+    expect(malformedResult.parsedGpx).toBeNull();
+
+    // 5. Oversize GPX (> 5 MB declared content-length)
+    const oversizeResult = await importTrailFromUrl(
+      "https://example.org/trasy/huge-gpx",
+      {
+        resolveDns: publicDns,
+        fetchFn: async (input) => {
+          if (String(input).endsWith(".gpx")) {
+            return new Response("<gpx></gpx>", {
+              status: 200,
+              headers: {
+                "content-type": "application/gpx+xml",
+                "content-length": String(6 * 1024 * 1024),
+              },
+            });
+          }
+          return new Response(
+            `<html><head><title>Szlak Huge</title></head><body><a href="/huge.gpx">GPX</a></body></html>`,
+            { status: 200, headers: { "content-type": "text/html" } },
+          );
+        },
+      },
+    );
+    expect(oversizeResult.title).toBe("Szlak Huge");
+    expect(oversizeResult.parsedGpx).toBeNull();
   });
 });

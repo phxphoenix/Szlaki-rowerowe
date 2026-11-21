@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { CameraOff, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { shouldUseUnoptimizedImage } from "@/lib/utils/image";
 import type { TrailImage } from "@/types/trail";
 
@@ -26,6 +26,7 @@ export function PhotoLightbox({
   onChangeIndex,
 }: PhotoLightboxProps) {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
 
   const total = images.length;
   const safeIndex =
@@ -156,15 +157,37 @@ export function PhotoLightbox({
         )}
 
         <div className="relative h-full max-h-[72dvh] w-full max-w-5xl">
-          <Image
-            src={activeImage.url}
-            alt={activeImage.caption || `${trailTitle} — zdjęcie ${safeIndex + 1}`}
-            fill
-            sizes="100vw"
-            unoptimized={shouldUseUnoptimizedImage(activeImage.url)}
-            className="object-contain select-none"
-            priority
-          />
+          {failedUrls[activeImage.url] ? (
+            <div
+              data-testid="lightbox-image-fallback"
+              className="flex h-full min-h-[240px] w-full flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 text-center text-white/80"
+            >
+              <CameraOff className="h-10 w-10 text-white/60" aria-hidden="true" />
+              <p className="text-sm font-semibold sm:text-base">
+                Nie udało się załadować zdjęcia
+              </p>
+              <p className="max-w-md text-xs text-white/55">
+                Sprawdź połączenie z internetem lub przejdź do kolejnego zdjęcia w galerii.
+              </p>
+            </div>
+          ) : (
+            <Image
+              src={activeImage.url}
+              alt={activeImage.caption || `${trailTitle} — zdjęcie ${safeIndex + 1}`}
+              fill
+              sizes="100vw"
+              unoptimized={shouldUseUnoptimizedImage(activeImage.url)}
+              onError={() =>
+                setFailedUrls((prev) =>
+                  prev[activeImage.url]
+                    ? prev
+                    : { ...prev, [activeImage.url]: true },
+                )
+              }
+              className="object-contain select-none"
+              priority
+            />
+          )}
         </div>
 
         {total > 1 && (

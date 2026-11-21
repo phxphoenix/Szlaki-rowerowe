@@ -10,7 +10,6 @@ export const ALLOWED_IMAGE_MIME_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
-  "image/svg+xml",
 ] as const;
 
 export const ALLOWED_GPX_MIME_TYPES = [
@@ -27,7 +26,6 @@ const IMAGE_MIME_EXTENSIONS: Record<AllowedImageMimeType, readonly string[]> = {
   "image/jpeg": [".jpg", ".jpeg"],
   "image/png": [".png"],
   "image/webp": [".webp"],
-  "image/svg+xml": [".svg"],
 };
 
 const GPX_EXTENSIONS = [".gpx", ".xml"] as const;
@@ -37,7 +35,6 @@ const EXTENSION_TO_MIME: Record<string, string> = {
   ".jpeg": "image/jpeg",
   ".png": "image/png",
   ".webp": "image/webp",
-  ".svg": "image/svg+xml",
   ".gpx": "application/gpx+xml",
   ".xml": "application/xml",
 };
@@ -110,7 +107,7 @@ export function validateUploadMetadata(
   if (!extension) {
     return {
       valid: false,
-      error: "Plik musi posiadać poprawne rozszerzenie (.jpg, .png, .webp, .svg lub .gpx).",
+      error: "Plik musi posiadać poprawne rozszerzenie (.jpg, .png, .webp lub .gpx).",
     };
   }
 
@@ -189,6 +186,6 @@ export function validateUploadMetadata(
 
   return {
     valid: false,
-    error: `Niedozwolony typ pliku (${normalizedMime}, ${extension}). Akceptujemy wyłącznie obrazy (JPG, PNG, WebP, SVG) oraz pliki GPX.`,
+    error: `Niedozwolony typ pliku (${normalizedMime}, ${extension}). Akceptujemy wyłącznie obrazy (JPG, PNG, WebP) oraz pliki GPX.`,
   };
 }

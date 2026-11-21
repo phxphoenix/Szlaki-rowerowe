@@ -11,6 +11,7 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { getDb, isDatabaseConfigured } from "@/db";
 import {
   trailImages,
@@ -21,6 +22,7 @@ import {
   type TrailRow,
 } from "@/db/schema";
 import { REGION_SLUGS, type RegionSlug } from "@/lib/constants/regions";
+import { simplifyRoutePoints } from "@/lib/gpx/simplify";
 import {
   cloneTrail,
   createInitialSeedTrails,
@@ -35,6 +37,7 @@ import type {
   CreateTrailInput,
   RouteBounds,
   RoutePoint,
+  RoutePreviewPoint,
   SortOption,
   Trail,
   TrailImage,
@@ -44,6 +47,8 @@ import type {
   TrailSummary,
   UpdateTrailInput,
 } from "@/types/trail";
+
+export const ROUTE_PREVIEW_MAX_POINTS = 48;
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -96,7 +101,44 @@ function computeBoundsFromPoints(points: RoutePoint[]): RouteBounds | null {
   return { north, south, east, west };
 }
 
-function toSummary(trail: Trail | TrailRow): TrailSummary {
+type TrailSummaryDbRow = Pick<
+  TrailRow,
+  | "id"
+  | "slug"
+  | "title"
+  | "shortDescription"
+  | "region"
+  | "subregion"
+  | "difficulty"
+  | "surface"
+  | "trailColor"
+  | "distanceKm"
+  | "elevationGainM"
+  | "estimatedTimeMin"
+  | "isLoop"
+  | "coverImageUrl"
+  | "sourceUrl"
+  | "sourceName"
+  | "published"
+  | "createdAt"
+  | "updatedAt"
+  | "routePointsJson"
+>;
+
+function buildRoutePreviewPoints(
+  points: readonly RoutePoint[] | null | undefined,
+): RoutePreviewPoint[] {
+  if (!Array.isArray(points) || points.length === 0) {
+    return [];
+  }
+  return simplifyRoutePoints(points, ROUTE_PREVIEW_MAX_POINTS).map(
+    ({ lat, lng }) => ({ lat, lng }),
+  );
+}
+
+function toSummaryBase(
+  trail: Trail | TrailSummaryDbRow,
+): Omit<TrailSummary, "routePreviewPoints"> {
   const createdAt =
     trail.createdAt instanceof Date
       ? trail.createdAt.toISOString()
@@ -129,6 +171,15 @@ function toSummary(trail: Trail | TrailRow): TrailSummary {
   };
 }
 
+function toSummary(trail: Trail | TrailSummaryDbRow): TrailSummary {
+  const sourcePoints =
+    "routePoints" in trail ? trail.routePoints : trail.routePointsJson;
+  return {
+    ...toSummaryBase(trail),
+    routePreviewPoints: buildRoutePreviewPoints(sourcePoints),
+  };
+}
+
 function mapImageRow(row: TrailImageRow): TrailImage {
   return {
     id: row.id,
@@ -157,7 +208,7 @@ function mapTrailRow(
   pois: TrailPoiRow[],
 ): Trail {
   return {
-    ...toSummary(row),
+    ...toSummaryBase(row),
     content: row.content,
     gpxUrl: row.gpxUrl ?? null,
     routePoints: Array.isArray(row.routePointsJson) ? row.routePointsJson : [],
@@ -379,7 +430,28 @@ export async function listTrails(
       .from(trails)
       .where(whereClause),
     db
-      .select()
+      .select({
+        id: trails.id,
+        slug: trails.slug,
+        title: trails.title,
+        shortDescription: trails.shortDescription,
+        region: trails.region,
+        subregion: trails.subregion,
+        difficulty: trails.difficulty,
+        surface: trails.surface,
+        trailColor: trails.trailColor,
+        distanceKm: trails.distanceKm,
+        elevationGainM: trails.elevationGainM,
+        estimatedTimeMin: trails.estimatedTimeMin,
+        isLoop: trails.isLoop,
+        coverImageUrl: trails.coverImageUrl,
+        sourceUrl: trails.sourceUrl,
+        sourceName: trails.sourceName,
+        published: trails.published,
+        createdAt: trails.createdAt,
+        updatedAt: trails.updatedAt,
+        routePointsJson: trails.routePointsJson,
+      })
       .from(trails)
       .where(whereClause)
       .orderBy(...buildDbOrderBy(params.sort))
@@ -527,9 +599,11 @@ export async function createTrail(input: CreateTrailInput): Promise<Trail> {
     existingSlugs.map((row) => row.slug),
   );
 
-  const [inserted] = await db
+  const trailId = crypto.randomUUID();
+  const insertTrailQuery = db
     .insert(trails)
     .values({
+      id: trailId,
       slug,
       title: parsed.title,
       shortDescription: parsed.shortDescription,
@@ -558,37 +632,55 @@ export async function createTrail(input: CreateTrailInput): Promise<Trail> {
     })
     .returning();
 
-  const insertedImages =
-    parsed.images.length > 0
-      ? await db
-          .insert(trailImages)
-          .values(
-            parsed.images.map((image, idx) => ({
-              trailId: inserted.id,
-              url: image.url,
-              caption: image.caption ?? null,
-              sortOrder: image.sortOrder ?? idx,
-            })),
-          )
-          .returning()
-      : [];
+  const batchQueries: [BatchItem<"pg">, ...BatchItem<"pg">[]] = [
+    insertTrailQuery,
+  ];
 
-  const insertedPois =
-    parsed.pois.length > 0
-      ? await db
-          .insert(trailPois)
-          .values(
-            parsed.pois.map((poi) => ({
-              trailId: inserted.id,
-              name: poi.name,
-              category: poi.category ?? null,
-              description: poi.description ?? null,
-              lat: poi.lat,
-              lng: poi.lng,
-            })),
-          )
-          .returning()
-      : [];
+  const hasImages = parsed.images.length > 0;
+  if (hasImages) {
+    batchQueries.push(
+      db
+        .insert(trailImages)
+        .values(
+          parsed.images.map((image, idx) => ({
+            trailId,
+            url: image.url,
+            caption: image.caption ?? null,
+            sortOrder: image.sortOrder ?? idx,
+          })),
+        )
+        .returning(),
+    );
+  }
+
+  const hasPois = parsed.pois.length > 0;
+  if (hasPois) {
+    batchQueries.push(
+      db
+        .insert(trailPois)
+        .values(
+          parsed.pois.map((poi) => ({
+            trailId,
+            name: poi.name,
+            category: poi.category ?? null,
+            description: poi.description ?? null,
+            lat: poi.lat,
+            lng: poi.lng,
+          })),
+        )
+        .returning(),
+    );
+  }
+
+  const batchResults: unknown[] = await db.batch(batchQueries);
+  const inserted = (batchResults[0] as TrailRow[])[0];
+  let nextResultIndex = 1;
+  const insertedImages = hasImages
+    ? (batchResults[nextResultIndex++] as TrailImageRow[])
+    : [];
+  const insertedPois = hasPois
+    ? (batchResults[nextResultIndex] as TrailPoiRow[])
+    : [];
 
   return mapTrailRow(inserted, insertedImages, insertedPois);
 }
@@ -829,37 +921,49 @@ export async function updateTrail(
     updatePayload.published = parsed.published;
   }
 
-  await db.update(trails).set(updatePayload).where(eq(trails.id, existing.id));
+  const batchQueries: [BatchItem<"pg">, ...BatchItem<"pg">[]] = [
+    db.update(trails).set(updatePayload).where(eq(trails.id, existing.id)),
+  ];
 
   if (parsed.images !== undefined) {
-    await db.delete(trailImages).where(eq(trailImages.trailId, existing.id));
+    batchQueries.push(
+      db.delete(trailImages).where(eq(trailImages.trailId, existing.id)),
+    );
     if (parsed.images.length > 0) {
-      await db.insert(trailImages).values(
-        parsed.images.map((image, idx) => ({
-          trailId: existing.id,
-          url: image.url,
-          caption: image.caption ?? null,
-          sortOrder: image.sortOrder ?? idx,
-        })),
+      batchQueries.push(
+        db.insert(trailImages).values(
+          parsed.images.map((image, idx) => ({
+            trailId: existing.id,
+            url: image.url,
+            caption: image.caption ?? null,
+            sortOrder: image.sortOrder ?? idx,
+          })),
+        ),
       );
     }
   }
 
   if (parsed.pois !== undefined) {
-    await db.delete(trailPois).where(eq(trailPois.trailId, existing.id));
+    batchQueries.push(
+      db.delete(trailPois).where(eq(trailPois.trailId, existing.id)),
+    );
     if (parsed.pois.length > 0) {
-      await db.insert(trailPois).values(
-        parsed.pois.map((poi) => ({
-          trailId: existing.id,
-          name: poi.name,
-          category: poi.category ?? null,
-          description: poi.description ?? null,
-          lat: poi.lat,
-          lng: poi.lng,
-        })),
+      batchQueries.push(
+        db.insert(trailPois).values(
+          parsed.pois.map((poi) => ({
+            trailId: existing.id,
+            name: poi.name,
+            category: poi.category ?? null,
+            description: poi.description ?? null,
+            lat: poi.lat,
+            lng: poi.lng,
+          })),
+        ),
       );
     }
   }
+
+  await db.batch(batchQueries);
 
   return getTrailByIdOrSlug(existing.id, { includeUnpublished: true });
 }

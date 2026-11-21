@@ -2,27 +2,28 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { TrailGallery } from "@/components/gallery/TrailGallery";
+import { TrailHeroImage } from "@/components/gallery/TrailHeroImage";
 import type { TrailImage } from "@/types/trail";
 
 const SAMPLE_IMAGES: TrailImage[] = [
   {
     id: "img-1",
     trailId: "trail-1",
-    url: "/images/trails/slaskie-1019753-cover.svg",
+    url: "/images/trails/slaskie-1019753-cover.jpg",
     caption: "Panorama jezior Pogoria III i IV",
     sortOrder: 0,
   },
   {
     id: "img-2",
     trailId: "trail-1",
-    url: "/images/trails/slaskie-1019753-1.svg",
+    url: "/images/trails/slaskie-1019753-1.jpg",
     caption: "Asfaltowa droga rowerowa wzdłuż brzegu",
     sortOrder: 1,
   },
   {
     id: "img-3",
     trailId: "trail-1",
-    url: "/images/trails/slaskie-1019753-2.svg",
+    url: "/images/trails/slaskie-1019753-2.jpg",
     caption: "Zacieniona aleja przez Park Zielona",
     sortOrder: 2,
   },
@@ -35,7 +36,7 @@ describe("TrailGallery & PhotoLightbox", () => {
     render(
       <TrailGallery
         images={SAMPLE_IMAGES}
-        coverImageUrl="/images/trails/slaskie-1019753-cover.svg"
+        coverImageUrl="/images/trails/slaskie-1019753-cover.jpg"
         trailTitle="Pogoria III i IV"
       />,
     );
@@ -91,7 +92,7 @@ describe("TrailGallery & PhotoLightbox", () => {
     render(
       <TrailGallery
         images={[]}
-        coverImageUrl="/images/trails/velo-dunajec-cover.svg"
+        coverImageUrl="/images/trails/velo-dunajec-cover.jpg"
         trailTitle="Velo Dunajec"
       />,
     );
@@ -101,5 +102,77 @@ describe("TrailGallery & PhotoLightbox", () => {
     await user.click(thumb);
 
     expect(screen.getByTestId("lightbox-counter")).toHaveTextContent("1 / 1");
+  });
+
+  it("renders fallback card on gallery thumbnail onError without affecting sibling images", () => {
+    render(
+      <TrailGallery
+        images={SAMPLE_IMAGES}
+        coverImageUrl="/images/trails/slaskie-1019753-cover.jpg"
+        trailTitle="Pogoria III i IV"
+      />,
+    );
+
+    const brokenImg = screen.getByAltText("Panorama jezior Pogoria III i IV");
+    fireEvent.error(brokenImg);
+
+    expect(screen.getByTestId("gallery-image-fallback")).toBeInTheDocument();
+    expect(
+      screen.getByText("Nie udało się załadować zdjęcia"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByAltText("Asfaltowa droga rowerowa wzdłuż brzegu"),
+    ).toBeInTheDocument();
+  });
+
+  it("renders dark fallback on Lightbox image onError and recovers when switching to another valid photo", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <TrailGallery
+        images={SAMPLE_IMAGES}
+        coverImageUrl="/images/trails/slaskie-1019753-cover.jpg"
+        trailTitle="Pogoria III i IV"
+      />,
+    );
+
+    const thumbButtons = screen.getAllByRole("button", {
+      name: /Otwórz zdjęcie/i,
+    });
+    await user.click(thumbButtons[0]);
+
+    const dialog = screen.getByRole("dialog");
+    const lightboxImg = dialog.querySelector("img");
+    expect(lightboxImg).not.toBeNull();
+    fireEvent.error(lightboxImg!);
+
+    expect(screen.getByTestId("lightbox-image-fallback")).toBeInTheDocument();
+
+    // Switching to next image should recover and render <img>
+    await user.click(screen.getByRole("button", { name: /Następne zdjęcie/i }));
+    expect(screen.getByTestId("lightbox-counter")).toHaveTextContent("2 / 3");
+    expect(
+      screen.queryByTestId("lightbox-image-fallback"),
+    ).not.toBeInTheDocument();
+    expect(dialog.querySelector("img")).not.toBeNull();
+  });
+});
+
+describe("TrailHeroImage", () => {
+  it("renders hero image and falls back cleanly on onError", () => {
+    render(
+      <TrailHeroImage
+        src="/images/trails/velo-dunajec-cover.jpg"
+        alt="Velo Dunajec"
+      />,
+    );
+
+    const heroImg = screen.getByAltText("Velo Dunajec");
+    fireEvent.error(heroImg);
+
+    expect(screen.getByTestId("hero-image-fallback")).toBeInTheDocument();
+    expect(
+      screen.getByText("Nie udało się załadować zdjęcia"),
+    ).toBeInTheDocument();
   });
 });

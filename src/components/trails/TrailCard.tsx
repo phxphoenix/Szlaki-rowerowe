@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -8,6 +11,7 @@ import {
   Route,
   TrendingUp,
 } from "lucide-react";
+import { RouteMiniMap } from "@/components/trails/RouteMiniMap";
 import { Badge } from "@/components/ui/badge";
 import {
   DIFFICULTY_LABELS,
@@ -25,10 +29,21 @@ export interface TrailCardProps {
 }
 
 export function TrailCard({ trail, priority = false }: TrailCardProps) {
+  const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null);
+
   const regionInfo = getRegionInfo(trail.region);
   const trailColorMeta = TRAIL_COLOR_META[trail.trailColor];
   const difficultyLabel = DIFFICULTY_LABELS[trail.difficulty];
   const surfaceLabel = SURFACE_SHORT_LABELS[trail.surface];
+
+  const coverImageUrl = trail.coverImageUrl?.trim() ?? "";
+  const imgError = Boolean(coverImageUrl) && failedCoverUrl === coverImageUrl;
+  const hasCoverImage = Boolean(coverImageUrl) && !imgError;
+
+  const routePreviewPoints = Array.isArray(trail.routePreviewPoints)
+    ? trail.routePreviewPoints
+    : [];
+  const hasRoutePreview = routePreviewPoints.length >= 2;
 
   return (
     <article className="h-full">
@@ -38,23 +53,53 @@ export function TrailCard({ trail, priority = false }: TrailCardProps) {
       >
         {/* Cover Image 16:10 */}
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-[var(--bg-carbon)]">
-          <Image
-            src={trail.coverImageUrl}
-            alt={trail.title}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            priority={priority}
-            unoptimized={shouldUseUnoptimizedImage(trail.coverImageUrl)}
-            className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-          />
+          {hasCoverImage ? (
+            <>
+              <Image
+                src={coverImageUrl}
+                alt={trail.title}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                priority={priority}
+                unoptimized={shouldUseUnoptimizedImage(coverImageUrl)}
+                onError={() => setFailedCoverUrl(coverImageUrl)}
+                className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+              />
 
-          <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#11161A]/65 via-transparent to-[#11161A]/25"
-            aria-hidden="true"
-          />
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#11161A]/65 via-transparent to-[#11161A]/25"
+                aria-hidden="true"
+              />
+
+              {hasRoutePreview && (
+                <RouteMiniMap
+                  points={routePreviewPoints}
+                  trailColor={trail.trailColor}
+                  isLoop={trail.isLoop}
+                  variant="overlay"
+                  className="pointer-events-none absolute right-2.5 bottom-2.5 z-10"
+                />
+              )}
+            </>
+          ) : (
+            <>
+              <RouteMiniMap
+                points={routePreviewPoints}
+                trailColor={trail.trailColor}
+                isLoop={trail.isLoop}
+                variant="full"
+                className="h-full w-full"
+              />
+
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#11161A]/55 via-transparent to-[#11161A]/35"
+                aria-hidden="true"
+              />
+            </>
+          )}
 
           {/* Top-left: Region + PTTK color dot */}
-          <div className="absolute top-3 left-3 flex max-w-[65%] items-center gap-1.5">
+          <div className="absolute top-3 left-3 z-10 flex max-w-[62%] items-center gap-1.5">
             <Badge variant="carbon" className="truncate py-1 pr-3 pl-2">
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/60"
@@ -67,13 +112,13 @@ export function TrailCard({ trail, priority = false }: TrailCardProps) {
           </div>
 
           {/* Top-right: Semantic Difficulty */}
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 right-3 z-10">
             <Badge variant={trail.difficulty}>{difficultyLabel}</Badge>
           </div>
 
           {/* Bottom-left: Optional Loop indicator */}
           {trail.isLoop && (
-            <div className="absolute bottom-3 left-3">
+            <div className="absolute bottom-3 left-3 z-10">
               <span className="inline-flex items-center gap-1 rounded-full bg-[#11161A]/75 px-2.5 py-0.5 text-[11px] font-semibold text-white/95 backdrop-blur-sm">
                 <Repeat className="h-3 w-3 text-[#FF5E33]" aria-hidden="true" />
                 Pętla
